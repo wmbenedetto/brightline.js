@@ -29,12 +29,177 @@
  */
 (function(window,undefined) {
 
+    var logLevels = {
+        OFF                                     : 0,
+        ERROR                                   : 1,
+        WARN                                    : 2,
+        INFO                                    : 3,
+        DEBUG                                   : 4
+    };
+
+    var logLevel                                = 'OFF';
     var console                                 = window.console || {};
 
     console.log                                 = (typeof console.log   === 'function') ? console.log   : function() {};
     console.info                                = (typeof console.info  === 'function') ? console.info  : console.log;
     console.error                               = (typeof console.error === 'function') ? console.error : console.log;
     console.warn                                = (typeof console.warn  === 'function') ? console.warn  : console.log;
+
+    /**
+     * Default log() implementation
+     *
+     * This can be overridden by defining a log() function in the initObj
+     * passed to the constructor
+     *
+     * @param funcName The name of the function generating the log message
+     * @param message The message to log
+     * @param payload Data object
+     * @param level Log level (ERROR, WARN, INFO, DEBUG)
+     */
+    var log = function(funcName,message,payload,level) {
+
+        payload                                 = (!payload) ? '' : payload;
+        level                                   = (!level) ? 'INFO' : level;
+        message                                 = '[' + funcName + '()] ' + message;
+
+        if (isLoggable(level)) {
+
+            if (level === 'ERROR') {
+                console.error(message,payload);
+            } else if (level === 'WARN') {
+                console.warn(message,payload);
+            } else if (level === 'INFO') {
+                console.info(message,payload);
+            } else {
+                console.log(message,payload);
+            }
+        }
+    };
+
+    /**
+     * Checks whether the given level is loggable based on the
+     * current log level
+     *
+     * @param level The level to check
+     * @return {Boolean}
+     */
+    var isLoggable = function(level){
+
+        var currentLogLevel                     = logLevels[logLevel];
+        var thisLogLevel                        = logLevels[level];
+
+        return thisLogLevel <= currentLogLevel;
+    };
+
+    /**
+     * Determines whether a variable is empty
+     *
+     * @param item The variable to check
+     */
+    var isEmpty = function(item){
+
+        if (typeof item == 'object' && item !== null){
+
+            for (var prop in item) {
+
+                if (item.hasOwnProperty(prop)){
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return typeof item === 'undefined' || item === null || item === '';
+    };
+
+    /**
+     * Checks whether an item is already in the source array
+     *
+     * @param item The item to check
+     * @param source The source array in which to look
+     * @return {Boolean}
+     */
+    var inArray = function(item,source) {
+
+        for (var i=0;i<source.length;i++) {
+
+            if (item === source[i]) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    /**
+     * Checks whether obj is an array
+     *
+     * @param obj The object to check
+     */
+    var isArray = function(obj){
+        return typeof obj === 'object' && obj !== null && typeof obj.length === 'number';
+    };
+
+    /**
+     * Checks whether an object is an object literal (non-null, non-array)
+     *
+     * @param obj The object to check
+     * @return {Boolean}
+     */
+    var isObjLiteral = function(obj) {
+        return typeof obj === 'object' && obj !== null && typeof obj.length !== 'number';
+    };
+
+    /**
+     * Flattens nested object into single dimensional object with dot-notated paths
+     *
+     * @param source The source object
+     * @param pathArray Array representing nested paths
+     * @param result The result object
+     * @return {Object}
+     */
+    var flattenObj = function(source,pathArray,result){
+
+        pathArray                               = (typeof pathArray === 'undefined') ? [] : pathArray;
+        result                                  = (typeof result === 'undefined') ? {} : result;
+
+        var key, value, newKey;
+
+        for (var i in source){
+
+            if (source.hasOwnProperty(i)){
+
+                key                             = i;
+                value                           = source[i];
+
+                pathArray.push(key);
+
+                if (typeof value === 'object' && value !== null){
+
+                    result                      = flattenObj(value,pathArray,result);
+
+                } else {
+
+                    newKey                      = pathArray.join('.');
+                    result[newKey]              = value;
+                }
+
+                pathArray.pop();
+            }
+        }
+
+        return result;
+    };
+
+    /**
+     * Trims leading and/or trailing whitespace from string
+     *
+     * @param str The string to trim
+     */
+    var trim = function(str){
+        return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+    };
 
     /**
      * Add bind() to Function prototype for browsers that don't yet support ECMAScript 5.
@@ -50,87 +215,193 @@
         }
     };
 
-    var lastNodeID                              = 0;
+    /**
+     * TemplateBlock class constructor
+     *
+     * @param name The name of the template block
+     * @constructor
+     */
+    var TemplateBlock = function TemplateBlock(name){
 
-    var Node = function Node(nodeID){
-        this.setNodeID(nodeID);
+        this.name                                = name;
+        this.content                             = '';
+        this.touched                             = 0;
+        this.variables                           = [];
+        this.parsedContent                       = [];
+        this.variableCache                       = {};
+        this.usedVariables                       = {};
     };
 
-    Node.prototype = {
+    /**
+     * TemplateBlock class prototype
+     *
+     * @type {Object}
+     */
+    TemplateBlock.prototype = {
 
         NODE_ID                                 : null,
 
+        name                                    : null,
+        content                                 : null,
+        touched                                 : null,
+        variables                               : null,
+        parsedContent                           : null,
+        variableCache                           : null,
+        usedVariables                           : null,
+
+        isAlreadyParsed : function(varName){
+            return varName in this.usedVariables;
+        },
+
+        getName : function(){
+            return this.name;
+        },
+
+        getParsedContent : function(){
+            return this.parsedContent;
+        },
+
+        addParsedContent : function(content){
+            this.parsedContent.push(content);
+        },
+
+        setParsedContent : function(content){
+            this.parsedContent                  = content;
+        },
+
+        getContent : function(){
+            return this.content;
+        },
+
+        setContent : function(content){
+            this.content                        = content;
+        },
+
+        setVariables : function(variables){
+            this.variables                      = variables;
+        },
+
+        getVariables : function(){
+            return this.variables;
+        },
+
+        setTouched : function(num){
+            this.touched                        = num;
+        },
+
+        touch : function(){
+            this.touched                       += 1;
+        },
+
+        getTouched : function(){
+            return this.touched;
+        },
+
+        getVariableCache : function(){
+            return this.variableCache;
+        },
+
+        setUsedVariable : function(key,value){
+            this.usedVariables[key]             = value;
+        },
+
         /**
-         * Gets the node ID
+         * Alias for getName()
          */
         getNodeID : function(){
-            return this.NODE_ID;
-        },
-
-        /**
-         * Sets the node ID
-         *
-         * @param nodeID The node id to use. If no nodeID is specified, one is generated automatically.
-         */
-        setNodeID : function(nodeID){
-            this.NODE_ID                        = (typeof nodeID !== 'undefined') ? nodeID : this.generateNodeID();
-        },
-
-        /**
-         * Generates a node ID by incrementing the value of the last nodeID stored in the registry
-         */
-        generateNodeID : function(){
-
-            if (typeof lastNodeID === 'undefined'){
-                lastNodeID                      = 0;
-            }
-
-            lastNodeID                         += 1;
-
-            return lastNodeID;
+            return this.getName();
         }
     };
 
+    /**
+     * Tree class constructor
+     *
+     * @constructor
+     */
     var Tree = function Tree(){
 
+        this.childParentMap                     = {};
         this.nodes                              = {};
         this.numNodes                           = 0;
         this.tree                               = {};
-        this.childParentMap                     = {};
     };
 
+    /**
+     * Tree class prototype
+     *
+     * @type {Object}
+     */
     Tree.prototype = {
 
-        /**
-         * Collection containing all nodes added to the Tree
-         */
-        nodes                                   : null,
-        numNodes                                : null,
+        childParentMap                          : null,     // Object mapping each child's nodeID to its parent's nodeID
+        nodes                                   : null,     // Object containing all nodes added to the Tree
+        numNodes                                : null,     // Number of nodes added to tree
+        tree                                    : null,     // Object mapping parent nodeID to array of children nodeIDs
 
         /**
-         * Object mapping parent nodeID to array of children nodeIDs
+         * Alias for global log(). Prepends "Tree." to funcName.
+         *
+         * @param funcName The name of the function generating the log message
+         * @param message The message to log
+         * @param payload Data object
+         * @param level Log level (ERROR, WARN, INFO, DEBUG)
          */
-        tree                                    : null,
+        log : function(funcName,message,payload,level){
+            log('Tree.'+funcName,message,payload,level);
+        },
 
         /**
-         * Object mapping each child's nodeID to its parent's nodeID
+         * Adds node
+         *
+         * @param node The node to add
+         * @param id The id of the node
          */
-        childParentMap                          : null,
-
         addNode : function(node,id){
 
             this.nodes[id]                      = node;
             this.numNodes                      += 1;
         },
 
+        /**
+         * Gets node
+         *
+         * @param id The id of the node to get
+         * @return {*} Node or null if node with id doesn't exist
+         */
         getNode : function(id){
             return (this.hasNode(id)) ? this.nodes[id] : null;
         },
 
-        getNodes : function(){
-            return this.nodes;
+        /**
+         * Gets nodes based on array of node ids. If none are
+         * specified, gets all nodes
+         *
+         * @param ids Array of node ids
+         * @return {Object}
+         */
+        getNodes : function(ids){
+
+            if (ids){
+
+                var nodes                       = {};
+
+                for (var i=0;i<ids.length;i++){
+                    nodes[ids[i]]               = this.getNode(ids[i]);
+                }
+
+                return nodes;
+
+            } else {
+
+                return this.nodes;
+            }
         },
 
+        /**
+         * Removes node
+         *
+         * @param id The id of the node to remove
+         */
         removeNode : function(id){
 
             if (this.hasNode(id)){
@@ -145,12 +416,58 @@
             }
         },
 
+        /**
+         * Checks whether a node exists
+         *
+         * @param id The id of the node to check
+         * @return {Boolean}
+         */
         hasNode : function(id){
             return id in this.nodes;
         },
 
-        hasNodes : function(){
-            return this.numNodes > 0;
+        /**
+         * Checks whether the tree is empty
+         *
+         * @return {Boolean}
+         */
+        isEmpty : function(){
+
+            for (var node in this.nodes){
+
+                if (this.nodes.hasOwnProperty(node)){
+                    return false;
+                }
+            }
+
+            return true;
+        },
+
+        /**
+         * Alias for hasNode()
+         *
+         * @param id The id of the node to check
+         * @return {Boolean}
+         */
+        has : function(id){
+            return this.hasNode(id);
+        },
+
+        /**
+         * Gets the node's id
+         *
+         * @param node The node for which to get the id
+         * @return {*}
+         */
+        getNodeID : function(node){
+
+            if (typeof node === 'string' || typeof node === 'number'){
+                return node;
+            } else if (typeof node === 'object' && node !== null && typeof node.getNodeID === 'function'){
+                return node.getNodeID();
+            } else {
+                throw new Error('[Tree.getNodeID()] Cannot get node ID');
+            }
         },
 
         /**
@@ -180,12 +497,12 @@
                 this.addNode(parent,parentNodeID);
             }
 
-            SF_Log.info('[Tree.addChild()] Adding child',{
+            this.log('addChild', 'Adding child',{
 
                 parent                          : parent,
                 child                           : child
 
-            },'Tree');
+            },'DEBUG');
 
             this.addNode(child,childNodeID);
 
@@ -206,16 +523,16 @@
          */
         addChildren : function(parent,children){
 
-            if (!SF_Array.isArray(children)){
+            if (!isArray(children)){
                 throw new Error('[Tree.addChildren()] Children added to Tree must in an array');
             }
 
-            SF_Log.info('[Tree.addChildren()] Adding children',{
+            this.log('addChildren', 'Adding children',{
 
                 parent                          : parent,
                 children                        : children
 
-            },'Tree');
+            },'DEBUG');
 
             for (var i=0;i<children.length;i++){
                 this.addChild(parent,children[i]);
@@ -247,7 +564,7 @@
 
             var parentNodeID                    = this.getNodeID(parent);
 
-            return (parentNodeID in this.tree) ? this.getNodes(this.tree[parentNodeID]) : [];
+            return (parentNodeID in this.tree) ? this.getNodes(this.tree[parentNodeID]) : {};
         },
 
         /**
@@ -294,12 +611,12 @@
                 throw new Error('[Tree.removeChild()] Cannot remove child. This node is not a child of the given parent.');
             }
 
-            SF_Log.info('[Tree.removeChild()] Removing child',{
+            this.log('removeChild', 'Removing child',{
 
                 parent                          : parent,
                 child                           : child
 
-            },'Tree');
+            },'DEBUG');
 
             var parentNodeID                    = this.getNodeID(parent);
             var childNodeID                     = this.getNodeID(child);
@@ -328,7 +645,7 @@
                 try {
                     delete this.tree[parentNodeID];
                 } catch (e){
-                    this.tree[parentNodeID]         = undefined;
+                    this.tree[parentNodeID]     = undefined;
                 }
             }
 
@@ -351,15 +668,15 @@
         removeChildren : function(parent,children){
 
             if (typeof children === 'undefined' && this.hasChildren(parent)){
-                children                            = this.getChildren(parent);
+                children                        = this.getChildren(parent);
             }
 
-            SF_Log.info('[Tree.removeChildren()] Removing children',{
+            this.log('removeChildren', 'Removing children',{
 
                 parent                          : parent,
                 children                        : children
 
-            },'Tree');
+            },'DEBUG');
 
             for (var i in children){
 
@@ -367,16 +684,6 @@
                     this.removeChild(parent,children[i]);
                 }
             }
-        },
-
-        /**
-         * Checks whether the given node has a parent
-         *
-         * @param node The node to check
-         * @return {Boolean}
-         */
-        isChild : function(node){
-            return this.hasParent(node);
         },
 
         /**
@@ -400,7 +707,7 @@
          */
         addParent : function(parent){
 
-            if (!this.hasNodes()){
+            if (!this.isEmpty()){
                 throw new Error('[Tree.addParent()] Cannot add lone parent to a Tree that already has nodes in it. Use Tree.addChild(parent,child) instead.');
             }
 
@@ -410,7 +717,7 @@
                 throw new Error('[Tree.addParent()] Parent\'s node id must be unique.');
             }
 
-            SF_Log.info('[Tree.addParent()] Adding parent',parent,'Tree');
+            this.log('addParent', 'Adding parent',parent,'DEBUG');
 
             this.addNode(parent,parentNodeID);
 
@@ -464,7 +771,7 @@
 
                 parentNodeID                    = this.childParentMap[child];
 
-            } else if (child instanceof SF_Node){
+            } else if (typeof child === 'object' && child !== null && typeof child.getNodeID === 'function'){
 
                 var childNodeID                 = child.getNodeID();
                 parentNodeID                    = (childNodeID in this.childParentMap) ? this.childParentMap[childNodeID] : null;
@@ -484,28 +791,6 @@
         },
 
         /**
-         * Checks whether the given node is the parent of the specified child node
-         *
-         * @param parent The parent node
-         * @param child The child node
-         * @return {Boolean}
-         */
-        isParentOf : function(parent,child){
-            return this.hasChild(parent,child);
-        },
-
-        /**
-         * Clears the Tree
-         */
-        clear : function(){
-
-            this.nodes                          = {};
-            this.tree                           = {};
-            this.childParentMap                 = {};
-            this.numNodes                       = 0;
-        },
-
-        /**
          * Removes a node from the Tree
          *
          * NOTE: If the node being removed is a parent, its child nodes will
@@ -517,7 +802,7 @@
 
             var nodeID                          = this.getNodeID(node);
 
-            SF_Log.info('[Tree.remove()] Removing node',node,'Tree');
+            this.log('remove', 'Removing node',node,'DEBUG');
 
             if (this.hasParent(nodeID)){
 
@@ -531,191 +816,830 @@
             }
 
             this.removeNode(nodeID);
-        },
-
-        /**
-         * Gets the node's id or CLASS_ID, if no nodeID is available
-         *
-         * @param node The node for which to get the node id
-         * @return {*}
-         */
-        getNodeID : function(node){
-
-            if (typeof node === 'string' || typeof node === 'number'){
-                return node;
-            } else if (node instanceof SF_Node){
-                return node.getNodeID();
-            } else if (typeof node.CLASS_ID !== 'undefined') {
-                return node.CLASS_ID;
-            } else {
-                throw new Error('[Tree.getNodeID()] Cannot get node ID');
-            }
         }
     };
 
-    var Brightline = function Brightline(initObj) {
+    /**
+     * Brightline class constructor
+     *
+     * @param templateString Optional html string containing template blocks and/or vars
+     * @param options Optional object containing config options
+     * @constructor
+     */
+    var Brightline = function Brightline(templateString,options) {
 
-        if (typeof initObj !== 'object' || initObj === null){
+        logLevel                                = options.logLevel || 'ERROR';
 
-            var errorMsg = 'Brightline constructor must be passed an initialization object';
-
-            throw new Error(errorMsg);
-        }
-
-        this.blocks                             = {};
+        this.blocks                             = new Tree();
         this.currentBlock                       = null;
         this.currentScope                       = null;
-        this.logLevel                           = initObj.logLevel || 'ERROR';
-        this.name                               = initObj.name || 'Brightline';
+        this.name                               = options.name || 'Brightline';
         this.usedVariables                      = {};
         this.variableCache                      = {};
+
+        if (typeof templateString === 'string'){
+            this.load(templateString);
+        }
+
+        return this.getAPI();
     };
 
+    /**
+     * Brightline class prototype
+     *
+     * @type {Object}
+     */
     Brightline.prototype = {
 
         blocks                                  : null,
         currentBlock                            : null,
         currentScope                            : null,
-        logLevel                                : null,
         name                                    : null,
         usedVariables                           : null,
         variableCache                           : null,
 
-        logLevels : {
-            OFF                                 : 0,
-            ERROR                               : 1,
-            WARN                                : 2,
-            INFO                                : 3,
-            DEBUG                               : 4
+        /**
+         * Gets public API methods
+         *
+         * @return {Object}
+         */
+        getAPI : function(){
+
+             return {
+
+                 load                           : this.load.bind(this),
+                 set                            : this.set.bind(this),
+                 setScope                       : this.setScope.bind(this),
+                 clearScope                     : this.clearScope.bind(this),
+                 touch                          : this.touch.bind(this),
+                 parse                          : this.parse.bind(this),
+                 render                         : this.render.bind(this),
+                 snip                           : this.snip.bind(this)
+             }
         },
 
         /**
-         * Default log() implementation
-         *
-         * This can be overridden by defining a log() function in the initObj
-         * passed to the constructor
+         * Alias for global log(). Prepends Brightline instance name
+         * to funcName.
          *
          * @param funcName The name of the function generating the log message
          * @param message The message to log
          * @param payload Data object
          * @param level Log level (ERROR, WARN, INFO, DEBUG)
          */
-        log : function(funcName,message,payload,level) {
+        log : function(funcName,message,payload,level){
+            log(this.name+'.'+funcName,message,payload,level);
+        },
 
-            payload                             = (!payload) ? '' : payload;
-            level                               = (!level) ? 'INFO' : level;
-            message                             = '[' + this.name + '.' + funcName + '()] ' + message;
+        /**
+         * Loads a template string into the Brightline engine
+         *
+         * @param templateString String containing template markup
+         */
+        load : function(templateString){
 
-            if (this.isLoggable(level)) {
+            this.log('load', 'Loading template string', null, 'DEBUG');
 
-                if (level === 'ERROR') {
-                    console.error(message,payload);
-                } else if (level === 'WARN') {
-                    console.warn(message,payload);
-                } else if (level === 'INFO') {
-                    console.info(message,payload);
-                } else {
-                    console.log(message,payload);
+            this.process(templateString);
+
+            return this;
+        },
+
+        /**
+         * Sets value of variable(s)
+         *
+         * Can be either called like set(key,value), or can be passed an
+         * object literal containing multiple key/value pairs.
+         *
+         * Nested object literals will replace variable placeholders in
+         * templates that are named with dot notation. For example:
+         *
+         * set({
+         *     name : {
+         *         first : 'Brad',
+         *         last : 'Pitt'
+         *     }
+         * })
+         *
+         * ... will replace {{name.first}} with Brad and {{name.last}} with Pitt.
+         *
+         * By default, calling set() will replace ALL instances of the variable in
+         * the template, automatically parsing any blocks where the variable appears.
+         * If you need to limit the blocks in which the variable is replaced, you'll
+         * need to use set() in conjunction with setScope()
+         */
+        set : function(){
+
+            var args                        = Array.prototype.slice.call(arguments);
+            var input                       = null;
+            var value                       = null;
+            var ignoreScope                 = false;
+
+            if (isObjLiteral(args[0])){
+
+                input                       = args[0];
+                ignoreScope                 = args[1];
+
+                this.setObjectVars(input,ignoreScope);
+
+            } else {
+
+                input                       = args[0];
+                value                       = args[1];
+                ignoreScope                 = args[2];
+
+                this.log('set', 'Setting "'+input+'" to ', value, 'DEBUG');
+
+                if (typeof value === 'function'){
+
+                    value                   = value();
+
+                } else if (typeof value === 'undefined'){
+
+                    value                   = null;
+                }
+
+                if (this.isValidKeyValuePair(input,value)){
+
+                    if (this.currentScope === null || ignoreScope){
+                        this.variableCache[input]               = value;
+                    } else {
+                        this.currentScope.variableCache[input]  = value;
+                    }
+                }
+            }
+
+            return this;
+        },
+
+        /**
+         * Sets the scope for variable replacement to a specific block.
+         *
+         * This allows you to use the same variable name in multiple
+         * blocks in a template, while limiting the replacement
+         * of that variable to a single block.
+         *
+         * For example, this template ...
+         *
+         * <!-- BEGIN hi -->
+         * Hi, {{firstName}} {{lastName}}
+         * <!-- END hi -->
+         *
+         * <!-- BEGIN welcome -->
+         * Welcome, {{firstName}} {{lastName}}
+         * <!-- END welcome -->
+         *
+         * ... could be parsed like ...
+         *
+         * template.set('lastName','Pitt');
+         *
+         * template.setScope('hi');
+         * template.set('firstName','Brad');
+         *
+         * template.setScope('welcome');
+         * template.set('firstName','Mr.');
+         *
+         * return template.render();
+         *
+         * ... which would return ...
+         *
+         * Hi, Brad Pitt
+         * Welcome, Mr. Pitt
+         *
+         * Notice that lastName is only set once. Because it is set without
+         * any scope defined, it is replaced with the same value in both blocks.
+         *
+         * @param blockName
+         */
+        setScope : function(blockName){
+
+            if (!this.hasBlock(blockName)){
+                throw new Error('['+this.name+'.setScope()] Cannot set scope to non-existent block: '+blockName);
+            }
+
+            this.log('setScope', 'Setting scope to '+blockName, null, 'DEBUG');
+
+            this.currentScope               = this.getBlock(blockName);
+
+            return this;
+        },
+
+        /**
+         * Clears scope that was previously set via setScope()
+         *
+         * The use-case for clearScope() is when you want to set variables
+         * in the global scope after having already called setScope() to limit
+         * scope to a specific block.
+         *
+         * @param resetScope
+         */
+        clearScope : function(resetScope){
+
+            this.log('clearScope', 'Clearing scope', null, 'DEBUG');
+
+            resetScope                      = (typeof resetScope === 'undefined') ? true : resetScope;
+
+            if (this.currentScope !== null){
+
+                this.currentScope.variableCache     = {};
+                this.currentScope.usedVariables     = {};
+            }
+
+            if (resetScope){
+                this.currentScope           = null;
+            }
+
+            return this;
+        },
+
+        /**
+         * Flags a block to be added to the rendered template, even if it doesn't
+         * have any variables or hasn't had any variables set.
+         *
+         * Any unset variables in touched blocks will be replaced with empty strings.
+         *
+         * Touching a block multiple times will add it to the rendered template
+         * multiple times.
+         *
+         * For example, this template ...
+         *
+         * <!-- BEGIN duck -->
+         * <img src="duck.png" />
+         * <!-- END duck -->
+         * <!-- BEGIN goose -->
+         * {{gooseName}} <img src="goose.png" />
+         * <!-- END goose -->
+         *
+         * ... could be parsed like ...
+         *
+         * template.touch('duck');
+         * template.touch('duck');
+         * template.touch('goose');
+         * return template.render();
+         *
+         * ... which would render ...
+         *
+         * <img src="duck.png" />
+         * <img src="duck.png" />
+         * <img src="goose.png" />
+         *
+         * @param blockName The name of the block to touch
+         */
+        touch : function(blockName){
+
+            var templateBlock               = this.getBlock(blockName);
+
+            templateBlock.touch();
+
+            this.log('touch', 'Touching block: '+blockName, templateBlock.getTouched(), 'DEBUG');
+
+            return this;
+        },
+
+        /**
+         * Adds block to rendered template, replacing any variables that
+         * have been set with their values, then clearing the variable
+         * values from the variableCache.
+         *
+         * The primary use-case for parse() is repeatedly adding a block
+         * within a loop.
+         *
+         * For example, using the template ...
+         *
+         * <ul>
+         *     <!-- BEGIN li -->
+         *     <li>{{name}}</li>
+         *     <!-- END li -->
+         * </ul>
+         *
+         * ... we would generate a list of names like this ...
+         *
+         * var names = ['Larry','Moe','Curly'];
+         *
+         * for (var i=0;i<names.length;i++){
+         *
+         *     template.set('name',names[i]);
+         *     template.parse('li');
+         * }
+         *
+         * return template.render();
+         *
+         * ... which would return ...
+         *
+         * <ul>
+         *     <li>Larry</li>
+         *     <li>Moe</li>
+         *     <li>Curly</li>
+         * </ul>
+         *
+         * @param blockName The name of the block to parse
+         * @param touchBlock If false, variables are replaced but block is not added to rendered template
+         * @return {Object} TemplateBlock object containing parsed content
+         */
+        parse : function(blockName,touchBlock){
+
+            this.log('parse', 'Parsing block: '+blockName, null, 'DEBUG');
+
+            blockName                       = (typeof blockName === 'undefined') ? '__root__' : blockName;
+            touchBlock                      = (typeof touchBlock === 'undefined') ? true : touchBlock;
+
+            var templateBlock               = this.getBlock(blockName);
+
+            if (touchBlock){
+                templateBlock.setTouched(1);
+            } else {
+                templateBlock.setTouched(0);
+            }
+
+            this.currentBlock               = templateBlock.getName();
+
+            this.parseBlock(templateBlock);
+            this.clearUsedVariablesFromCache();
+            this.clearScope(false);
+
+            templateBlock.setTouched(0);
+
+            this.currentBlock               = '__root__';
+
+            return templateBlock;
+        },
+
+        /**
+         * Renders block, parsing it and returning it as a string.
+         *
+         * If no blockName is specified, the entire template is parsed.
+         *
+         * @param blockName The name of the block to render
+         * @return {String} Rendered template string
+         */
+        render : function(blockName){
+
+            blockName                       = (typeof blockName === 'undefined') ? '__root__' : blockName;
+
+            this.log('render', 'Rendering '+blockName, null, 'DEBUG');
+
+            var templateBlock               = this.parse(blockName);
+            var templateString              = trim(templateBlock.getParsedContent().join("\n"));
+
+            this.clearScope();
+
+            return templateString;
+        },
+
+        /**
+         * Gets the parsed content of the specified block, without actually touching it
+         * (so it won't appear in the rendered template itself).
+         *
+         * This can be used when there's content in the template that needs to be pulled
+         * from the template into a variable.
+         *
+         * @param blockName The name of the block to snip
+         * @return {String} The parsed block
+         */
+        snip : function(blockName){
+
+            this.log('snip', 'Snipping block: '+blockName, null, 'DEBUG');
+
+            blockName                       = (typeof blockName === 'undefined') ? '__root__' : blockName;
+
+            var templateBlock               = this.parse(blockName,false);
+            var parsedContent               = templateBlock.getParsedContent();
+            var templateString              = trim(parsedContent.join("\n"));
+
+            if (templateString.length === 0){
+                templateString              = templateBlock.getContent();
+            }
+
+            parsedContent                   = parsedContent.slice(0, 0 - templateBlock.getTouched());
+
+            templateBlock.setParsedContent(parsedContent);
+
+            this.clearScope();
+
+            return templateString;
+        },
+
+        /**
+         * Sets variables using object literal containing key:value pairs
+         *
+         * The object is flattened to a single-dimensional object with dot-notated
+         * keys representing the nesting of the object.
+         *
+         * For example:
+         *
+         * {
+         *     name : {
+         *         first : 'Brad',
+         *         last : 'Pitt'
+         *     }
+         * }
+         *
+         * ... becomes ...
+         *
+         * {
+         *     'name.first' : 'Brad',
+         *     'name.last' : 'Pitt'
+         * }
+         *
+         * ... which would replace template vars named {{name.first}} and {{name.last}}
+         *
+         * @param obj
+         * @param ignoreScope
+         */
+        setObjectVars : function(obj,ignoreScope){
+
+            var flattenedObj                = flattenObj(obj);
+
+            this.log('setObject', 'Setting object vars', {
+
+                originalObj                 : obj,
+                flattenedObj                : flattenedObj
+
+            }, 'DEBUG');
+
+            for (var i in flattenedObj){
+
+                if (flattenedObj.hasOwnProperty(i)){
+                    this.set(i,flattenedObj[i],ignoreScope);
                 }
             }
         },
 
         /**
-         * Checks whether the given level is loggable based on the
-         * current log level
+         * Gets TemplateBlock object
          *
-         * @param level The level to check
-         * @return {Boolean}
+         * @param blockName The name of the block to get
+         * @return {Object}
          */
-        isLoggable : function(level){
+        getBlock : function(blockName){
 
-            var currentLogLevel                 = this.logLevels[this.logLevel];
-            var thisLogLevel                    = this.logLevels[level];
+            if (!this.hasBlock(blockName)){
+                throw new Error('['+this.name+'.getBlock()] Cannot get non-existent block: '+blockName);
+            }
 
-            return thisLogLevel <= currentLogLevel;
+            return this.blocks.getChild(blockName);
         },
 
-        utils : {
+        /**
+         * Checks whether block exists
+         *
+         * @param blockName The name of the block to check
+         * @return {Boolean}
+         */
+        hasBlock : function(blockName){
+            return this.blocks.has(blockName);
+        },
 
-            /**
-             * Checks whether an item is already in the source array
-             *
-             * @param item The item to check
-             * @param source The source array in which to look
-             * @return {Boolean}
-             */
-            inArray : function(item,source) {
+        /**
+         * Processes template string, extracting all blocks and variables
+         * into TemplateBlock objects
+         *
+         * @param templateString String containing template markup
+         */
+        process : function(templateString){
 
-                for (var i=0;i<source.length;i++) {
+            this.log('process', 'Processing template string', { templateString : templateString } , 'DEBUG');
 
-                    if (item === source[i]) {
-                        return true;
+            var rootBlock                   = new TemplateBlock('__root__');
+            rootBlock.setContent(templateString);
+
+            this.findBlocks(rootBlock);
+            this.insertChildBlockPlaceholders(rootBlock);
+            this.findVariablesInBlockContent(rootBlock);
+
+            if (!this.blocks.has('__root__')){
+                this.blocks.addParent(rootBlock);
+            }
+        },
+
+        /**
+         * Recursively finds blocks in TemplateBlock content
+         *
+         * Blocks look like:
+         *
+         * <!-- BEGIN myBlock -->
+         * Blah Blah {{variable}} blah blah
+         * <!-- END myBlock -->
+         *
+         * @param parentBlock The TemplateBlock containing the content to search for blocks
+         */
+        findBlocks : function(parentBlock){
+
+            var pattern                     = /<!--\s+BEGIN\s+([\.0-9A-Za-z:|_-]+)\s+-->([\s\S]*)<!--\s+END\s+\1\s+-->/mg;
+            var parentBlockContent          = parentBlock.getContent();
+            var foundBlocks                 = parentBlockContent.match(pattern);
+            var self                        = this;
+
+            if (foundBlocks){
+
+                this.log('findBlocks', 'Found blocks in '+parentBlock.getName(), foundBlocks , 'DEBUG');
+
+                for (var i=0;i<foundBlocks.length;i++){
+
+                    var foundBlock          = new RegExp(pattern).exec(foundBlocks[i]);
+
+                    if (foundBlock){
+
+                        var blockName       = foundBlock[1];
+                        var templateBlock   = new TemplateBlock(blockName);
+
+                        templateBlock.setContent(foundBlock[2]);
+
+                        if (self.blocks.has(blockName)){
+                            throw new Error('['+this.name+'.findBlocks()] Duplicate block name: '+blockName+'. Block names must be unique.');
+                        }
+
+                        self.blocks.addChild(parentBlock,templateBlock);
+                        self.findBlocks(templateBlock);
+                        self.insertChildBlockPlaceholders(templateBlock);
+                        self.findVariablesInBlockContent(templateBlock);
+                    }
+                }
+            }
+        },
+
+        /**
+         * Inserts placeholders for child blocks found in TemplateBlock.
+         *
+         * <!-- BEGIN myBlock -->
+         *     Some content
+         * <!-- END myBlock -->
+         *
+         * ... is replaced with ...
+         *
+         * {{__myBlock__}}
+         *
+         * @param templateBlock The TemplateBlock into which to insert child block placeholders
+         */
+        insertChildBlockPlaceholders : function(templateBlock){
+
+            if (this.blocks.hasChildren(templateBlock)){
+
+                this.log('insertChildBlockPlaceholders', 'Inserting child block placeholders in '+templateBlock.getName(), templateBlock , 'DEBUG');
+
+                var childBlocks             = this.blocks.getChildren(templateBlock);
+                var self                    = this;
+
+                for (var i in childBlocks){
+
+                    if (childBlocks.hasOwnProperty(i)){
+
+                        (function(childBlock){
+
+                            var childBlockName          = childBlock.getName();
+                            var parentBlockContent      = templateBlock.getContent();
+                            var childBlockPattern       = '<!--\\s+BEGIN\\s+'+childBlockName+'\\s+-->([\\s\\S]*)<!--\\s+END\\s+'+childBlockName+'\\s+-->';
+                            var matches                 = parentBlockContent.match(childBlockPattern);
+
+                            if (matches){
+
+                                self.log('insertChildBlockPlaceholders', ' --> Inserting placeholder for '+childBlockName, null , 'DEBUG');
+
+                                templateBlock.setContent(parentBlockContent.replace(matches[0],'{{__'+childBlockName+'__}}'));
+                            }
+
+                        }(childBlocks[i]));
+                    }
+                }
+            }
+        },
+
+        /**
+         * Finds variables in TemplateBlock
+         *
+         * Variables look like {{someVar}}
+         *
+         * @param templateBlock The TemplateBlock in which to find variables
+         */
+        findVariablesInBlockContent : function(templateBlock){
+
+            var pattern                     = /(?!\{{__[\.0-9A-Za-z\*:|_-]+__\}})\{{([\.0-9A-Za-z\*:|_-]+)\}}/mg;
+            var variableArray               = [];
+            var foundVariables              = templateBlock.getContent().match(pattern);
+
+            if (foundVariables){
+
+                this.log('findVariablesInBlockContent', 'Found variables in '+templateBlock.getName(), {
+
+                    templateBlock           : templateBlock,
+                    foundVariables          : foundVariables
+
+                }, 'DEBUG');
+
+                for (var i=0;i<foundVariables.length;i++){
+
+                    if (!inArray(variableArray,foundVariables[i])){
+
+                        var rawVariableName = foundVariables[i].replace('{{','').replace('}}','');
+                        variableArray.push(rawVariableName);
                     }
                 }
 
-                return false;
-            },
+                templateBlock.setVariables(variableArray);
+            }
+        },
 
-            /**
-             * Checks whether an object is an object literal (non-null, non-array)
-             *
-             * @param obj The object to check
-             * @return {Boolean}
-             */
-            isObjLiteral : function(obj) {
-                return typeof obj === 'object' && obj !== null && !this.isArray(obj);
-            },
+        /**
+         * Parses block, replacing variables with values and child block placeholders
+         * with parsed child block content
+         *
+         * @param templateBlock The TemplateBlock with the content to parse
+         * @return {*}
+         */
+        parseBlock : function(templateBlock){
 
-            /**
-             * Flattens nested object into single dimensional object with dot-notated paths
-             *
-             * @param source The source object
-             * @param pathArray Array representing nested paths
-             * @param result The result object
-             * @return {Object}
-             */
-            flattenObj : function(source,pathArray,result){
+            this.log('parseBlock', 'Parsing '+templateBlock.getName(), templateBlock , 'DEBUG');
 
-                pathArray                   = (typeof pathArray === 'undefined') ? [] : pathArray;
-                result                      = (typeof result === 'undefined') ? {} : result;
+            var childBlocks                 = this.blocks.getChildren(templateBlock);
 
-                var key, value, newKey;
+            for (var i in childBlocks){
 
-                for (var i in source){
+                if (childBlocks.hasOwnProperty(i)){
+                    this.parseBlock(childBlocks[i]);
+                }
+            }
 
-                    if (source.hasOwnProperty(i)){
+            this.currentBlock               = templateBlock.getName();
 
-                        key                 = i;
-                        value               = source[i];
+            this.replaceBlockVariables(templateBlock);
+            this.replaceChildBlockPlaceholders(templateBlock);
 
-                        pathArray.push(key);
+            templateBlock.setTouched(0);
 
-                        if (typeof value === 'object' && value !== null){
+            return templateBlock;
+        },
 
-                            result          = this.flattenObj(value,pathArray,result);
+        /**
+         * Replaces variables in block with values. Any variables for which values
+         * haven't been set are replaced with empty strings.
+         *
+         * @param templateBlock The TemplateBlock with the variables to replace
+         */
+        replaceBlockVariables : function(templateBlock){
+
+            var blockContent                = templateBlock.getContent();
+            var blockVariables              = templateBlock.getVariables();
+            var blockName                   = templateBlock.getName();
+            var blockVariableCache          = templateBlock.getVariableCache();
+
+            if (blockVariables.length > 0){
+
+                this.log('replaceBlockVariables', 'Replacing block variables in '+templateBlock.getName(), templateBlock , 'DEBUG');
+
+                for (var i=0;i<blockVariables.length;i++){
+
+                    var variableName        = blockVariables[i];
+                    var placeholder         = '{{'+variableName+'}}';
+
+                    if (blockName === this.currentBlock){
+
+                        if (variableName in blockVariableCache){
+
+                            blockContent    = blockContent.replace(placeholder,blockVariableCache[variableName]);
+
+                            this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+templateBlock.variableCache[variableName]+'" from template block', null , 'DEBUG');
+
+                            templateBlock.setUsedVariable(variableName,true);
+                            templateBlock.touched       = 1;
+
+                        } else if (variableName in this.variableCache && !templateBlock.isAlreadyParsed(variableName)){
+
+                            blockContent    = blockContent.replace(placeholder,this.variableCache[variableName]);
+
+                            this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+this.variableCache[variableName]+'" from variable cache', null , 'DEBUG');
+
+                            this.usedVariables[variableName] = true;
+                            templateBlock.touched       = 1;
 
                         } else {
 
-                            newKey          = pathArray.join('.');
+                            this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with empty string', null , 'DEBUG');
 
-                            result[newKey]  = value;
+                            blockContent    = blockContent.replace(placeholder,'');
                         }
 
-                        pathArray.pop();
+                    } else {
+
+                        this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with empty string', null , 'DEBUG');
+
+                        blockContent        = blockContent.replace(placeholder,'');
+                    }
+                }
+            }
+
+            var blockTouched                = templateBlock.getTouched();
+
+            for (var j=0;j<blockTouched;j++){
+                templateBlock.addParsedContent(blockContent);
+            }
+        },
+
+        /**
+         * Replaces child block placeholders with parsed child block content
+         *
+         * @param templateBlock The TemplateBlock containing the child block placeholders to replace
+         */
+        replaceChildBlockPlaceholders : function(templateBlock){
+
+            var parsedContent               = this.getParsedContent(templateBlock);
+            var childBlocks                 = this.blocks.getChildren(templateBlock);
+
+            if (!isEmpty(childBlocks)){
+
+                this.log('replaceChildBlockPlaceholders', 'Replacing child block placeholders in '+templateBlock.getName(), { parsedContent : parsedContent } , 'DEBUG');
+
+                for (var i in childBlocks){
+
+                    if (childBlocks.hasOwnProperty(i)){
+
+                        var placeholder     = '{{__'+childBlocks[i].getName()+'__}}';
+                        var replacement     = trim(childBlocks[i].parsedContent.join(''));
+
+                        for (var j in parsedContent){
+
+                            if (parsedContent.hasOwnProperty(j) && parsedContent[j].indexOf(placeholder) > -1){
+
+                                this.log('replaceChildBlockPlaceholders', ' --> Replacing child block '+placeholder, { replacement : replacement } , 'DEBUG');
+
+                                parsedContent[j]        = parsedContent[j].replace(placeholder,replacement);
+                            }
+                        }
+
+                        childBlocks[i].parsedContent    = [];
                     }
                 }
 
-                return result;
-            },
-
-            /**
-             * Trims leading and/or trailing whitespace from string
-             *
-             * @param str The string to trim
-             */
-            trim : function(str){
-                return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+                templateBlock.setParsedContent(parsedContent);
             }
+        },
+
+        /**
+         * Gets the parsed content from the TemplateBlock
+         *
+         * If the TemplateBlock doesn't have any parsed content, but its child blocks do,
+         * then the TemplateBlock is parsed now.
+         *
+         * @param templateBlock The TemplateBlock from which to get parsed content
+         * @return {*}
+         */
+        getParsedContent : function(templateBlock){
+
+            if (templateBlock.parsedContent.length === 0 && this.blocks.hasChildren(templateBlock)){
+
+                var childBlocks             = this.blocks.getChildren(templateBlock);
+
+                for (var i in childBlocks){
+
+                    if (childBlocks.hasOwnProperty(i)){
+
+                        if (childBlocks[i].parsedContent.length > 0){
+
+                            this.touch(templateBlock.getName());
+                            this.replaceBlockVariables(templateBlock);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            this.log('getParsedContent', 'Getting parsed content for '+templateBlock.getName(), { parsedContent : templateBlock.parsedContent } , 'DEBUG');
+
+            return templateBlock.getParsedContent();
+        },
+
+        /**
+         * Clears variables which have been used from the variable cache
+         */
+        clearUsedVariablesFromCache : function(){
+
+            this.log('clearUsedVariablesFromCache', 'Clearing used variables from cache', this.usedVariables , 'DEBUG');
+
+            for (var varName in this.usedVariables){
+
+                if (this.usedVariables.hasOwnProperty(varName)){
+
+                    try {
+                        delete this.variableCache[varName];
+                    } catch (e) {
+                        this.variableCache[varName] = undefined;
+                    }
+                }
+            }
+
+            this.usedVariables              = [];
+        },
+
+        /**
+         * Checks whether a key and a value is a valid pair:
+         * the key is a string and the value is scalar and, if it
+         * is a string, is non-empty
+         *
+         * @param key The key to check
+         * @param value The value to check
+         * @return {Boolean}
+         */
+        isValidKeyValuePair : function(key,value){
+            return (typeof key === 'string') && ((typeof value === 'string' && value.length > 0) || typeof value === 'number' || typeof value === 'boolean');
         }
     };
 

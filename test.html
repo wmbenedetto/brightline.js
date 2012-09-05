@@ -4,21 +4,42 @@
 <head>
 <title>Brightline.js</title>
 <script language="JavaScript" type="text/javascript" src="src/Brightline.js"></script>
-<script language="JavaScript" type="text/javascript">
-
-
-    var initObj = {
-
-        name : 'Brightline1',
-        logLevel : 'DEBUG'
-    };
-
-    window.template = new Brightline(initObj);
-
-    console.log(window.template);
-</script>
 </head>
 <body>
 
 </body>
+
+<script language="JavaScript" type="text/javascript">
+
+    var templateString = '<div id="{{id}}" class="notifier {{view}} {{type}}">';
+    templateString += '<div class="content">';
+    templateString += '<!-- BEGIN block -->';
+    templateString += '<!-- BEGIN title -->';
+    templateString += '<h1 class="title">{{title}}</h1>';
+    templateString += '<!-- END title -->';
+    templateString += '<!-- BEGIN message -->';
+    templateString += '<p class="message">{{message}}</p>';
+    templateString += '<!-- END message -->';
+    templateString += '<!-- END block -->';
+    templateString += '<!-- BEGIN touched -->';
+    templateString += 'This was touched!';
+    templateString += '<!-- END touched -->';
+    templateString += '</div>';
+    templateString += '</div>';
+
+    var template = new Brightline(templateString,{
+        name        : 'BrightlineTest'
+    });
+
+    for (var i=0;i<10;i++){
+
+        template.set('title','This is the title');
+        template.set('message','This is the message');
+        template.parse('block');
+
+        template.touch('touched');
+    }
+
+    document.getElementsByTagName('body')[0].innerHTML = template.render();
+</script>
 </html>
