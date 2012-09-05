@@ -59,7 +59,7 @@
     var log = function(funcName,message,payload,level) {
 
         payload                                 = (!payload) ? '' : payload;
-        level                                   = (!level) ? 'INFO' : level;
+        level                                   = (!level) ? 'INFO' : level.toUpperCase();
         message                                 = '[' + funcName + '()] ' + message;
 
         if (isLoggable(level)) {
@@ -898,7 +898,7 @@
          */
         load : function(templateString){
 
-            this.log('load', 'Loading template string', null, 'DEBUG');
+            this.log('load', 'Loading template string');
 
             this.process(templateString);
 
@@ -948,7 +948,7 @@
                 value                       = args[1];
                 ignoreScope                 = args[2];
 
-                this.log('set', 'Setting "'+input+'" to ', value, 'DEBUG');
+                this.log('set', 'Setting "'+input+'" to ', value);
 
                 if (typeof value === 'function'){
 
@@ -1017,7 +1017,7 @@
                 throw new Error('['+this.name+'.setScope()] Cannot set scope to non-existent block: '+blockName);
             }
 
-            this.log('setScope', 'Setting scope to '+blockName, null, 'DEBUG');
+            this.log('setScope', 'Setting scope to '+blockName);
 
             this.currentScope               = this.getBlock(blockName);
 
@@ -1091,7 +1091,7 @@
 
             templateBlock.touch();
 
-            this.log('touch', 'Touching block: '+blockName, templateBlock.getTouched(), 'DEBUG');
+            this.log('touch', 'Touching block: '+blockName, templateBlock.getTouched());
 
             return this;
         },
@@ -1138,7 +1138,7 @@
          */
         parse : function(blockName,touchBlock){
 
-            this.log('parse', 'Parsing block: '+blockName, null, 'DEBUG');
+            this.log('parse', 'Parsing block: '+blockName);
 
             blockName                       = (typeof blockName === 'undefined') ? '__root__' : blockName;
             touchBlock                      = (typeof touchBlock === 'undefined') ? true : touchBlock;
@@ -1176,7 +1176,7 @@
 
             blockName                       = (typeof blockName === 'undefined') ? '__root__' : blockName;
 
-            this.log('render', 'Rendering '+blockName, null, 'DEBUG');
+            this.log('render', 'Rendering '+blockName);
 
             var templateBlock               = this.parse(blockName);
             var templateString              = trim(templateBlock.getParsedContent().join("\n"));
@@ -1198,7 +1198,7 @@
          */
         snip : function(blockName){
 
-            this.log('snip', 'Snipping block: '+blockName, null, 'DEBUG');
+            this.log('snip', 'Snipping block: '+blockName);
 
             blockName                       = (typeof blockName === 'undefined') ? '__root__' : blockName;
 

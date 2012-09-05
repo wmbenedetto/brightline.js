@@ -3,7 +3,7 @@
 <html>
 <head>
 <title>Brightline.js</title>
-<script language="JavaScript" type="text/javascript" src="src/Brightline.js"></script>
+<script language="JavaScript" type="text/javascript" src="src/Brightline.min.js"></script>
 </head>
 <body>
 
@@ -28,7 +28,8 @@
     templateString += '</div>';
 
     var template = new Brightline(templateString,{
-        name        : 'BrightlineTest'
+        name        : 'BrightlineTest',
+        logLevel    : 'INFO'
     });
 
     for (var i=0;i<10;i++){
