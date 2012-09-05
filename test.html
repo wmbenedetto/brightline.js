@@ -7,29 +7,39 @@
 </head>
 <body>
 
+<script id="tpl" type="text/x-brightline-template">
+    <div id="{{id}}" class="notifier {{view}} {{type}}">
+        <div class="content">
+
+            <!-- BEGIN block -->
+                <!-- BEGIN title -->
+                <h1 class="title">{{title}}</h1>
+                <!-- END title -->
+                <!-- BEGIN message -->
+                <p class="message">{{message}}</p>
+                <!-- END message -->
+            <!-- END block -->
+
+            <!-- BEGIN touched -->
+            This was touched!
+            <!-- END touched -->
+
+            <!-- BEGIN snipped -->
+            This was snipped by {{name}}!
+            <!-- END snipped -->
+        </div>
+    </div>
+</script>
+
 </body>
 
 <script language="JavaScript" type="text/javascript">
 
-    var templateString = '<div id="{{id}}" class="notifier {{view}} {{type}}">';
-    templateString += '<div class="content">';
-    templateString += '<!-- BEGIN block -->';
-    templateString += '<!-- BEGIN title -->';
-    templateString += '<h1 class="title">{{title}}</h1>';
-    templateString += '<!-- END title -->';
-    templateString += '<!-- BEGIN message -->';
-    templateString += '<p class="message">{{message}}</p>';
-    templateString += '<!-- END message -->';
-    templateString += '<!-- END block -->';
-    templateString += '<!-- BEGIN touched -->';
-    templateString += 'This was touched!';
-    templateString += '<!-- END touched -->';
-    templateString += '</div>';
-    templateString += '</div>';
+    var templateString      = document.getElementById('tpl').innerHTML;
+    var template            = new Brightline(templateString);
 
-    var template = new Brightline(templateString);
-    template.setLogLevel('DEBUG');
-    template.setName('options.tpl');
+//    template.setLogLevel('DEBUG');
+//    template.setName('tpl');
 
     for (var i=0;i<10;i++){
 
@@ -39,6 +49,8 @@
 
         template.touch('touched');
     }
+
+    console.log(template.snip('snipped'));
 
     document.getElementsByTagName('body')[0].innerHTML = template.render();
 </script>
