@@ -828,14 +828,17 @@
      */
     var Brightline = function Brightline(templateString,options) {
 
-        logLevel                                = options.logLevel || 'ERROR';
-
         this.blocks                             = new Tree();
         this.currentBlock                       = null;
         this.currentScope                       = null;
-        this.name                               = options.name || 'Brightline';
         this.usedVariables                      = {};
         this.variableCache                      = {};
+
+        if (isObjLiteral(options)){
+
+            logLevel                            = options.logLevel || 'ERROR';
+            this.name                           = options.name || null;
+        }
 
         if (typeof templateString === 'string'){
             this.load(templateString);
@@ -874,8 +877,18 @@
                  touch                          : this.touch.bind(this),
                  parse                          : this.parse.bind(this),
                  render                         : this.render.bind(this),
-                 snip                           : this.snip.bind(this)
+                 snip                           : this.snip.bind(this),
+                 setLogLevel                    : this.setLogLevel.bind(this),
+                 setName                        : this.setName.bind(this)
              }
+        },
+
+        setLogLevel : function(level){
+            logLevel                            = level;
+        },
+
+        setName : function(name){
+            this.name                           = name;
         },
 
         /**
@@ -888,7 +901,10 @@
          * @param level Log level (ERROR, WARN, INFO, DEBUG)
          */
         log : function(funcName,message,payload,level){
-            log(this.name+'.'+funcName,message,payload,level);
+
+            funcName                            = (this.name) ? this.name+': Brightline.'+funcName : 'Brightline.'+funcName;
+
+            log(funcName,message,payload,level);
         },
 
         /**
@@ -1014,7 +1030,7 @@
         setScope : function(blockName){
 
             if (!this.hasBlock(blockName)){
-                throw new Error('['+this.name+'.setScope()] Cannot set scope to non-existent block: '+blockName);
+                throw new Error('['+this.name+' Brightline.setScope()] Cannot set scope to non-existent block: '+blockName);
             }
 
             this.log('setScope', 'Setting scope to '+blockName);
@@ -1274,7 +1290,7 @@
         getBlock : function(blockName){
 
             if (!this.hasBlock(blockName)){
-                throw new Error('['+this.name+'.getBlock()] Cannot get non-existent block: '+blockName);
+                throw new Error('['+this.name+' Brightline.getBlock()] Cannot get non-existent block: '+blockName);
             }
 
             return this.blocks.getChild(blockName);
@@ -1346,7 +1362,7 @@
                         templateBlock.setContent(foundBlock[2]);
 
                         if (self.blocks.has(blockName)){
-                            throw new Error('['+this.name+'.findBlocks()] Duplicate block name: '+blockName+'. Block names must be unique.');
+                            throw new Error('['+this.name+' Brightline.findBlocks()] Duplicate block name: '+blockName+'. Block names must be unique.');
                         }
 
                         self.blocks.addChild(parentBlock,templateBlock);
