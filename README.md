@@ -1,2 +1,2 @@
-brightline.js - COMING SOON
+brightline.js - COMING SOON!
 ==========
