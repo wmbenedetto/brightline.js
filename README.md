@@ -63,9 +63,7 @@ Tightly coupling the template to the object structure also makes the templates m
 
 ### Clean, simple syntax
 
-Brightline templates only have two concepts: *variables* and *blocks*. 
-
-No plugins. No expressions. No helpers. No conditionals. No loops. No functions.
+Brightline templates only have two concepts: *variables* and *blocks*. No plugins. No expressions. No helpers. No conditionals. No loops. No functions.
 
 Variables are expressed using the familiar Mustache-style formatting, like `{{variableName}}`. Blocks are expressed using HTML comments. 
 
@@ -118,8 +116,27 @@ var html = template.render();
 console.log(html); //outputs: <div>Brad Pitt</div>
 ```
 
+## Templates
 
 ## API
+
+All of Brightline's power is derived from a handful of simple methods that can be combined in some very powerful ways.
+
+### Brightline(*templateString* [, *options*])
+* REQUIRED: *templateString:* HTML string containing variables and/or blocks
+* OPTIONAL: *options:* Optional object containing configuration options
+
+The Brightline constructor must be passed a template string containing variables and/or blocks.
+
+You can optionally pass an object containing configuration options:
+* *name*: Plain-English name of the template. This is used in debug logging, to distinguish between log messages coming from multiple Brightline instances.
+* *logLevel*: String containing the level of logging to output to the console (OFF, ERROR, WARN, INFO, DEBUG)
+
+
+### setName()
+
+
+
 
 `setName()`
 
