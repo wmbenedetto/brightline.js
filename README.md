@@ -59,20 +59,34 @@ Tightly coupling the template to the object structure also makes the templates m
 **Third**, most of the major template engines do some sort of eval'ing under the hood. Either they use `eval()` directly, or via `new Function()`. Not only is this a security risk, but it means that the template engines are completely unusable in contexts where the Content-Security-Policy disallows eval, such as in Google Chrome extensions.
 
 
-# Features
+## Features
 
-## Clean, simple syntax
+### Clean, simple syntax
 
-Brightline templates only have two concepts: *variables* and *blocks*. No plugins. No expressions. No helpers. No conditionals. No loops. No functions.
+Brightline templates only have two concepts: *variables* and *blocks*. 
 
-## No magic
+No plugins. No expressions. No helpers. No conditionals. No loops. No functions.
 
-## No eval()
+Variables are expressed using the familiar Mustache-style formatting, like `{{variableName}}`. Blocks are expressed using HTML comments. 
 
-# Quick start
+That's it.
+
+### No magic
+
+All the logic for rendering Brightline templates is in *your* JavaScript. If you need a loop, you write a loop. Need an `if/else` statement? Write one. Want to run values through a function before inserting them in the template? Write the function, pass the return value to Brightline. 
+
+By keeping *all* template logic in your JavaScript, there are no surprises. You can see exactly what's happening, allowing you to organize your code in much more understandable, maintainable fashion.
+
+### No eval()
+
+Because the template logic is in your JavaScript code, there's no need for Brightline to use `eval()` or `new Function()` to render templates. That means you can use Brightline even under strict Content-Security-Policy settings.
+
+## Quick start
 
 
-# API
+
+
+## API
 
 `load()`
 
@@ -95,10 +109,10 @@ Brightline templates only have two concepts: *variables* and *blocks*. No plugin
 `render()`
 
 
-# Examples
+## Examples
 
 
-# License
+## License
 
 
 # Other projects
