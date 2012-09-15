@@ -83,12 +83,43 @@ Because the template logic is in your JavaScript code, there's no need for Brigh
 
 ## Quick start
 
+This is the simplest possible use of Brightline:
 
+```javascript
+var html = new Brightline('<div>{{name}}</div>').set({ name : 'Brad Pitt' }).render();
+console.log(html); //outputs: <div>Brad Pitt</div>
+```
+
+Got it? Good. Let's break down what's happening:
+
+Calling `new Brightline()` creates a new instance of the Brightline template engine. We pass to that constructor a *template string*, in this case `<div>{{name}}</div>`. This template string contains a single *variable*, `{{name}}`.
+
+Under the hood, Brightline parses this template string, extracting any variables that it finds.
+
+The Brightline constructor returns an instance of the Brightline API, which makes all of the Brightline methods chainable. Using this chaining, we next call the `set()` method, passing to it an object containing a key:value pair: `{ name : 'Brad Pitt' }`.
+
+Brightline takes the object passed to `set()`, and checks to see whether it contains any variables that were extracted from the template. In this case, it finds `name` and sets the value of the template variable to `Brad Pitt`.
+
+The `set()` method is also chainable, so next we chain it with the `render()` method. This tells Brightline to replace all the variables in the template string with the values passed to it via `set()`. It then returns the rendered template, and *voila* ... `<div>Brad Pitt</div>`.
+
+#### A note on method chaining
+
+In a simple example like this, method chaining is a nice syntactic sugar. However, in more complex examples, chaining could be more confusing than helpful. For clarity, we could easily write the same code above like this:
+
+```javascript
+var templateString = '<div>{{name}}</div>';
+var content = { name : 'Brad Pitt' };
+var template = new Brightline(templateString);
+
+template.set(content);
+
+var html = template.render();
+
+console.log(html); //outputs: <div>Brad Pitt</div>
+```
 
 
 ## API
-
-`load()`
 
 `setName()`
 
