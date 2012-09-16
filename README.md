@@ -12,10 +12,6 @@ You bet your ass. If you want to know why, check out the [Why Brightline?](#why-
 
 Brightline templates only have two concepts: *variables* and *blocks*. No plugins. No expressions. No helpers. No conditionals. No loops. No functions.
 
-Variables are expressed using the familiar Mustache-style formatting, like `{{variableName}}`. Blocks are expressed using HTML comments, like `<!-- BEGIN blockName -->` and `<!-- END blockName -->`. 
-
-That's it.
-
 ### No magic
 
 All the logic for rendering Brightline templates is in *your* JavaScript. If you need a loop, you write a loop. Need an `if/else` statement? Write one. Want to run values through a function before inserting them in the template? Write the function, pass the return value to Brightline. 
@@ -64,7 +60,53 @@ console.log(html); //outputs: <div>Brad Pitt</div>
 ```
 
 ## Templates
-## Best practices
+
+Brightline templates are incredibly, delightfully simple. There are only two main concepts: *variables* and *blocks*. 
+
+That's it.
+
+### Variables
+
+Variables are expressed using familiar Mustache-style formatting, like `{{variableName}}`:
+
+```html
+<p>{{name}} is a great actor.</p>
+```
+
+Variables can also use dot-notation to reference values in a nested object:
+
+```html
+<p>{{name.first}} {{name.last}} is a great actor.</p>
+```
+
+Variables are replaced with values using the `set()` method, as described in the [API](#setkeyvalue-or-setcontentobj) docs below.
+
+### Blocks
+
+Blocks are expressed using HTML comments that surround the block:
+
+```html
+<ul>
+    <!-- BEGIN item -->
+    <li>{{name}}</li>
+    <!-- END item -->
+</ul>
+```
+
+Blocks can also be nested:
+
+```html
+<ul>
+    <!-- BEGIN item -->
+    <li>
+        <!-- BEGIN photo -->
+        <img src="{{photoURL}}" />
+        <!-- END photo -->
+        {{name}}     
+    </li>
+    <!-- END item -->
+</ul>
+```
 
 ## API
 
