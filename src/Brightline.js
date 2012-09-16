@@ -840,6 +840,8 @@
             this.name                           = options.name || null;
         }
 
+        this.log('constructor', 'Creating new Brightline template', options);
+
         if (typeof templateString === 'string'){
             this.process(templateString);
         }
@@ -1036,7 +1038,7 @@
          */
         clearScope : function(resetScope){
 
-            this.log('clearScope', 'Clearing scope', null, 'DEBUG');
+            this.log('clearScope', 'Clearing scope');
 
             resetScope                      = (typeof resetScope === 'undefined') ? true : resetScope;
 
