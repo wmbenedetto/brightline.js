@@ -2,9 +2,7 @@
 
 Brightline.js is a JavaScript template engine for people who demand a clean separation (a *bright line*) between presentation and logic.
 
-**Another JavaScript template engine? Are you f*cking serious?**
-
-You bet your ass. If you want to know why you should use Brightline (or why you shouldn't), continue reading. If you'd rather jump right into using Brightline, skip ahead to the [Quick Start](#quick-start) section.
+If you want to know why you should use Brightline (or why you shouldn't), continue reading. If you'd rather jump right into using Brightline, skip ahead to the [Quick Start](#quick-start) section.
 
 ## Why Brightline?
 
@@ -99,8 +97,6 @@ new Brightline('<div>{{name}}</div>').set({ name : 'Brad Pitt' }).render();
 <div>Brad Pitt</div>
 ```
 
-
-
 Got it? Good. Let's break down what's happening:
 
 Calling `new Brightline()` creates a new instance of the Brightline template engine. We pass a *template string* to the constructor, in this case `<div>{{name}}</div>`. This template string contains a single *variable*, `{{name}}`.
@@ -123,10 +119,12 @@ var content         = { name : 'Brad Pitt' };
 var template        = new Brightline(templateString);
 
 template.set(content);
+template.render();
+```
+###### Result:
 
-var html            = template.render();
-
-console.log(html); //outputs: <div>Brad Pitt</div>
+```html
+<div>Brad Pitt</div>
 ```
 
 ## Template syntax
