@@ -4,7 +4,7 @@ Brightline.js is a JavaScript Template Engine for people who demand a clean sepa
 
 #### Another JavaScript template engine? Are you f*cking serious?
 
-You bet your ass. If you want to know why, check out the [Why Brightline?](#why-brightline) section.
+You bet your ass. If you want to know why you should use Brightline (or why you shouldn't), check out the [Why Brightline?](#why-brightline) section.
 
 ## Features
 
@@ -113,7 +113,20 @@ Blocks can also be nested:
 
 All of Brightline's power is derived from a handful of simple methods that can be combined in some very powerful ways.
 
+ * [Brightline(*templateString*,*options*)](#brightlinetemplatestring-options)
+ * [setName(*templateName*)](#setnametemplatename)
+ * [setLogLevel(*logLevel*)](#setloglevelloglevel)
+ * [set(*key*,*value*) OR set(*contentObj*)](#setkeyvalue-or-setcontentobj)
+ * [setScope(blockName)](#setscopeblockname)
+ * [clearScope()](#clearscope)
+ * [parse(*blockName*)](#parseblockname)
+ * [touch(*blockName*)](#touchblockname)
+ * [render(*blockName*)](#renderblockname)
+ * [snip(*blockName*)](#snipblockname)
+ 
 *NOTE:* All the examples in the API docs display templates as HTML blocks and JavaScript as code blocks. The presumption is that the html template will be fetched into a variable named `templateString` by whatever means you choose. So, when you see something like `new Brightline(templateString)`, assume that `templateString` contains the contents of the template in the example.
+      
+---
 
 ### Brightline(*templateString*, *options*)
 * [REQUIRED] *templateString:* HTML string containing variables and/or blocks
@@ -490,6 +503,17 @@ console.error(logMessage);
 ```
 
 ## Understanding rendering
+
+In some cases, it may be helpful to understand how Brightline renders templates.
+
+* [Unused variables are replaced with empty strings when the template is rendered.](#unused-variables-are-replaced-with-empty-strings-when-the-template-is-rendered)
+* [If a variable in a block is set, the block is automatically parsed.](#if-a-variable-in-a-block-is-set-the-block-is-automatically-parsed)
+* [If a block doesn't have any variables set, it will not be parsed unless it is touched with touch()](#if-a-block-doesnt-have-any-variables-set-it-will-not-be-parsed-unless-it-is-touched-with-touch)
+* [If a variable is set in a child block, or a child block is touched, then the parent block is automatically parsed.](#if-a-variable-is-set-in-a-child-block-or-a-child-block-is-touched-then-the-parent-block-is-automatically-parsed)
+* [When rendering a template, Brightline respects the order of your source template's markup.](#when-rendering-a-template-brightline-respects-the-order-of-your-source-templates-markup)
+* [Each block maintains its own render stack.](#each-block-maintains-its-own-render-stack)
+
+---
 
 #### Unused variables are replaced with empty strings when the template is rendered.
 
