@@ -1,12 +1,10 @@
-# brightline.js
+# Brightline.js
 
 Brightline.js is a JavaScript template engine for people who demand a clean separation (a *bright line*) between presentation and logic.
 
-#### Another JavaScript template engine? Are you f*cking serious?
+**Another JavaScript template engine? Are you f*cking serious?**
 
-You bet your ass. If you want to know why you should use Brightline (or why you shouldn't), continue reading. 
-
-If you'd rather jump right into using Brightline, skip ahead to the [Quick Start](#quick-start) section.
+You bet your ass. If you want to know why you should use Brightline (or why you shouldn't), continue reading. If you'd rather jump right into using Brightline, skip ahead to the [Quick Start](#quick-start) section.
 
 ## Why Brightline?
 
