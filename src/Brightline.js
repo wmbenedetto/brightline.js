@@ -841,7 +841,7 @@
         }
 
         if (typeof templateString === 'string'){
-            this.load(templateString);
+            this.process(templateString);
         }
 
         return this.getAPI();
@@ -870,7 +870,6 @@
 
              return {
 
-                 load                           : this.load.bind(this),
                  set                            : this.set.bind(this),
                  setScope                       : this.setScope.bind(this),
                  clearScope                     : this.clearScope.bind(this),
@@ -905,20 +904,6 @@
             funcName                            = (this.name) ? this.name+': Brightline.'+funcName : 'Brightline.'+funcName;
 
             log(funcName,message,payload,level);
-        },
-
-        /**
-         * Loads a template string into the Brightline engine
-         *
-         * @param templateString String containing template markup
-         */
-        load : function(templateString){
-
-            this.log('load', 'Loading template string');
-
-            this.process(templateString);
-
-            return this;
         },
 
         /**
@@ -1055,7 +1040,7 @@
 
             resetScope                      = (typeof resetScope === 'undefined') ? true : resetScope;
 
-            if (this.currentScope !== null){
+            if (!resetScope && this.currentScope !== null){
 
                 this.currentScope.variableCache     = {};
                 this.currentScope.usedVariables     = {};
