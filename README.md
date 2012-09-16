@@ -112,19 +112,29 @@ Blocks can also be nested:
 
 All of Brightline's power is derived from a handful of simple methods that can be combined in some very powerful ways.
 
+*NOTE:* All the examples in the API docs display templates as HTML blocks and JavaScript as code blocks. The presumption is that the html template will be fetched into a variable named `templateString` by whatever means you choose. So, when you see something like `new Brightline(templateString)`, assume that `templateString` contains the contents of the template in the example.
+
 ### Brightline(*templateString*, *options*)
 * [REQUIRED] *templateString:* HTML string containing variables and/or blocks
 * [OPTIONAL] *options:* Optional object containing configuration options
 
 The Brightline constructor must be passed a template string containing variables and/or blocks.
 
+```html
+<div>{{name}}</div>
+```
+
 ```javascript
-var template = new Brightline('<div>{{name}}</div>');
+var template = new Brightline(templateString);
 ```
 
 You can optionally pass an object containing configuration options:
 * *name*: Plain-English name of the template. Same as calling `setName()`.
 * *logLevel*: String containing the level of logging to output to the console. Same as calling `setLogLevel()`
+
+```html
+<div>{{name}}</div>
+```
 
 ```javascript
 var options = {
@@ -132,7 +142,7 @@ var options = {
     logLevel : 'DEBUG'
 };
 
-var template = new Brightline('<div>{{name}}</div>',options);
+var template = new Brightline(templateString,options);
 ```
 
 ---
@@ -142,8 +152,12 @@ var template = new Brightline('<div>{{name}}</div>',options);
 
 The `setName()` method is used to set the plain-English name of the template. This is used in debug logging, to distinguish between log messages coming from multiple Brightline instances. 
 
+```html
+<div>{{name}}</div>
+```
+
 ```javascript
-var template = new Brightline('<div>{{name}}</div>');
+var template = new Brightline(templateString);
 template.setName('Example Template');
 
 // console log messages are displayed like:
@@ -157,8 +171,12 @@ template.setName('Example Template');
 
 The `setLogLevel()` method is used to throttle the amount of log messages that are output to the console. The default is ERROR. 
 
+```html
+<div>{{name}}</div>
+```
+
 ```javascript
-var template = new Brightline('<div>{{name}}</div>');
+var template = new Brightline(templateString);
 template.setLogLevel('DEBUG');
 ```
 
@@ -177,8 +195,13 @@ The `set()` method is used to set the value of a variable in a template. It can 
 Calling `set()` once will replace *all* instances of the variable in the template. If you want to limit the replacement of a variable to a certain block, you'll need to use `set()` in conjunction with `setScope()`. 
 
 ##### set(*key*,*value*)
+
+```html
+{{man}} is married to {{woman}}. {{man}} loves {{woman}} very much.
+```
+
 ```javascript
-var template = new Brightline('{{man}} is married to {{woman}}. {{man}} loves {{woman}} very much.');
+var template = new Brightline(templateString);
 
 template.set('man','Brad');
 template.set('woman','Angelina');
@@ -188,8 +211,13 @@ template.set('woman','Angelina');
 ```
 
 ##### set(*contentObj*)
+
+```html
+{{man}} is married to {{woman}}. {{man}} loves {{woman}} very much.
+```
+
 ```javascript
-var template = new Brightline('{{man}} is married to {{woman}}. {{man}} loves {{woman}} very much.');
+var template = new Brightline(templateString);
 
 template.set({
     man     : 'Brad',
@@ -209,15 +237,18 @@ The `setScope()` method is used to limit the scope of variable replacements to a
 
 This is useful when you want to use the same variable name in multiple blocks while only parsing it in certain blocks:
 
-```javascript
-var tpl = '<!-- BEGIN block1 -->';
-tpl += '<p>{{name}} is a great actor</p>';
-tpl += '<!-- END block1 -->';
-tpl += '<!-- BEGIN block2 -->';
-tpl += '<p>{{name}} is a great football player</p>';
-tpl += '<!-- END block2 -->';
+```html
+<!-- BEGIN block1 -->
+<p>{{name}} is a great actor</p>
+<!-- END block1 -->
 
-var template = new Brightline(tpl);
+<!-- BEGIN block2 -->
+<p>{{name}} is a great football player</p>
+<!-- END block2 -->
+```
+
+```javascript
+var template = new Brightline(templateString);
 template.setScope('block1');
 template.set('name','Brad Pitt'); // This will only set {{name}} in block1
 
@@ -226,15 +257,18 @@ template.set('name','Brad Pitt'); // This will only set {{name}} in block1
 ```
 This is also useful when you want to set different values for the same variable in different blocks:
 
-```javascript
-var tpl = '<!-- BEGIN block1 -->';
-tpl += '<p>{{name}} is a great actor</p>';
-tpl += '<!-- END block1 -->';
-tpl += '<!-- BEGIN block2 -->';
-tpl += '<p>{{name}} is a great football player</p>';
-tpl += '<!-- END block2 -->';
+```html
+<!-- BEGIN block1 -->
+<p>{{name}} is a great actor</p>
+<!-- END block1 -->
 
-var template = new Brightline(tpl);
+<!-- BEGIN block2 -->
+<p>{{name}} is a great football player</p>
+<!-- END block2 -->
+```
+
+```javascript
+var template = new Brightline(templateString);
 template.setScope('block1');
 template.set('name','Brad Pitt'); // This will set {{name}} in block1
 template.setScope('block2');
@@ -252,15 +286,18 @@ The `clearScope()` method clears a previously set scope, restoring the global sc
 
 This is useful when you've already called setScope(), and you now want to replace variables in all blocks:
 
-```javascript
-var tpl = '<!-- BEGIN block1 -->';
-tpl += '<p>{{name}} is a {{adjective}} actor</p>';
-tpl += '<!-- END block1 -->';
-tpl += '<!-- BEGIN block2 -->';
-tpl += '<p>{{name}} is a {{adjective}} football player</p>';
-tpl += '<!-- END block2 -->';
+```html
+<!-- BEGIN block1 -->
+<p>{{name}} is a {{adjective}} actor</p>
+<!-- END block1 -->
 
-var template = new Brightline(tpl);
+<!-- BEGIN block2 -->
+<p>{{name}} is a {{adjective}} football player</p>
+<!-- END block2 -->
+```
+
+```javascript
+var template = new Brightline(templateString);
 template.setScope('block1');
 template.set('name','Brad Pitt'); // This will set {{name}} in block1
 template.setScope('block2');
@@ -280,15 +317,17 @@ The `parse()` method adds a block to the rendered template. By default, `parse()
 
 However, sometimes you'll want to add a block to the rendered template multiple times, such as when looping through an array or object:
 
-```javascript
-var tpl = "<ul>\n";
-tpl += '<!-- BEGIN item -->';
-tpl += '<li>{{name}}</li>'+"\n";
-tpl += '<!-- END item -->';
-tpl += "\n</ul>";
+```html
+<ul>
+    <!-- BEGIN item -->
+    <li>{{name}}</li>
+    <!-- END item -->
+</ul>
+```
 
+```javascript
 var actors = ['Brad Pitt','George Clooney','Matt Damon'];
-var template = new Brightline(tpl);
+var template = new Brightline(templateString);
 
 for (var i=0;i<actors.length;i++){
     
@@ -298,10 +337,10 @@ for (var i=0;i<actors.length;i++){
 
 // When rendered, the template will read:
 // <ul>
-//<li>Brad Pitt</li>
-//<li>George Clooney</li>
-//<li>Matt Damon</li>
-//</ul>
+//     <li>Brad Pitt</li>
+//     <li>George Clooney</li>
+//     <li>Matt Damon</li>
+// </ul>
 ```
 ---
 
@@ -310,16 +349,18 @@ for (var i=0;i<actors.length;i++){
 
 The `touch()` method adds a block to the rendered template, even when it doesn't have any variables in it. 
 
+```html
+<!-- BEGIN error -->
+Something bad happened!
+<!-- END error -->
+
+<!-- BEGIN success -->
+It worked!
+<!-- END success -->
+```
+
 ```javascript
-
-var tpl = '<!-- BEGIN error -->';
-tpl += 'Something bad happened!';
-tpl += '<!-- END error -->';
-tpl += '<!-- BEGIN success -->';
-tpl += 'It worked!';
-tpl += '<!-- END success -->';
-
-var template = new Brightline(tpl);
+var template = new Brightline(templateString);
 template.touch('error');
 
 // When rendered, the template will read:
@@ -328,11 +369,12 @@ template.touch('error');
 
 The `touch()` method works similar to `parse()`, in that it can be called multiple times to add the block more than onceto the rendered template:
 
+```html
+I am <!-- BEGIN howMuch -->very, <!-- END howMuch --> happy to see you!
+```
+
 ```javascript
-
-var tpl = 'I am <!-- BEGIN howMuch -->very, <!-- END howMuch --> happy to see you!';
-
-var template = new Brightline(tpl);
+var template = new Brightline(templateString);
 
 for (var i=0;i<4;i++){
     template.touch('howMuch');
@@ -350,8 +392,12 @@ The `render()` method returns a template string in which all variables have been
 
 The most common use of the `render()` method is to call it with no arguments, so it returns the full rendered template:
 
+```html
+{{man}} is married to {{woman}}. {{man}} loves {{woman}} very much.
+```
+
 ```javascript
-var template = new Brightline('{{man}} is married to {{woman}}. {{man}} loves {{woman}} very much.');
+var template = new Brightline(templateString);
 
 template.set('man','Brad');
 template.set('woman','Angelina');
@@ -361,17 +407,19 @@ var html = template.render(); // Returns: Brad is married to Angelina. Brad love
 
 The `render()` method can also be used to render individual blocks from a template:
 
+```html
+<!-- BEGIN continue -->;
+<img src="continueButton.png" alt="{{altText}}" />
+<!-- END continue -->
+
+<!-- BEGIN buy -->
+<img src="buyButton.png" alt="{{altText}}" />
+<!-- END buy -->
+```
+
 ```javascript
-
 // Imagine you have all your buttons in one template file, so they can be re-used in many pages
-var tpl = '<!-- BEGIN continue -->';
-tpl += '<img src="continueButton.png" alt="{{altText}}" />';
-tpl += '<!-- END continue -->';
-tpl += '<!-- BEGIN buy -->';
-tpl += '<img src="buyButton.png" alt="{{altText}}" />';
-tpl += '<!-- END buy -->';
-
-var template = new Brightline(tpl);
+var template = new Brightline(templateString);
 
 template.setScope('continue');
 template.set('altText','Continue');
@@ -382,12 +430,15 @@ template.setScope('buy');
 template.set('altText','Buy Now');
 
 var buyButton = template.render('buy');
+```
 
+```html
+{{buyButton}} {{continueButton}}
+```
 
+```javascript
 // Now imagine you have a shopping cart page that uses some buttons
-var tpl2 = '{{buyButton}} {{continueButton}}';
-
-var template2 = new Brightline(tpl2);
+var template2 = new Brightline(templateString2);
 template2.set('buyButton',buyButton);
 template2.set('continueButton',continueButton);
 
@@ -406,22 +457,28 @@ var html = template2.render();
 
 The `snip()` method gets the rendered content of a block, without actually touching it (so it won't appear in the rendered template itself). This is useful when there's content in a template that you want to pull into a variable.
 
+```html
+<!-- BEGIN error -->
+Something bad happened!
+<!-- END error -->
+
+<!-- BEGIN success -->
+It worked!
+<!-- END success -->
+
+<!-- BEGIN logMessage -->
+Error code: {{errorCode}}
+<!-- END logMessage -->
+```
+
 ```javascript
+var template = new Brightline(templateString);
 
-var tpl = '<!-- BEGIN error -->';
-tpl += 'Something bad happened!';
-tpl += '<!-- END error -->';
-tpl += '<!-- BEGIN success -->';
-tpl += 'It worked!';
-tpl += '<!-- END success -->';
-tpl += '<!-- BEGIN logMessage -->';
-tpl += 'Error code: {{errorCode}}';
-tpl += '<!-- END logMessage -->';
-
-var template = new Brightline(tpl);
 template.touch('error');
 template.set('errorCode','100.1234');
+
 var logMessage = template.snip('logMessage');
+
 console.error(logMessage);
 
 // When rendered, the template will read:
@@ -430,7 +487,9 @@ console.error(logMessage);
 // Meanwhile, the console will display this error:
 // Error code: 100.1234
 ```
----
+
+## Best practices
+
 
 
 ## Examples
