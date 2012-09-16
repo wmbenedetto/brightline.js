@@ -65,7 +65,7 @@ Tightly coupling the template to the object structure also makes the templates m
 
 Brightline templates only have two concepts: *variables* and *blocks*. No plugins. No expressions. No helpers. No conditionals. No loops. No functions.
 
-Variables are expressed using the familiar Mustache-style formatting, like `{{variableName}}`. Blocks are expressed using HTML comments. 
+Variables are expressed using the familiar Mustache-style formatting, like `{{variableName}}`. Blocks are expressed using HTML comments, like `<!-- BEGIN blockName -->` and `<!-- END blockName -->`. 
 
 That's it.
 
@@ -73,7 +73,7 @@ That's it.
 
 All the logic for rendering Brightline templates is in *your* JavaScript. If you need a loop, you write a loop. Need an `if/else` statement? Write one. Want to run values through a function before inserting them in the template? Write the function, pass the return value to Brightline. 
 
-By keeping *all* template logic in your JavaScript, there are no surprises. You can see exactly what's happening, allowing you to organize your code in much more understandable, maintainable fashion.
+By keeping *all* template logic in your JavaScript, there are no surprises. You can see exactly what's happening, allowing you to organize your code in much more readable, maintainable fashion.
 
 ### No eval()
 
@@ -90,11 +90,11 @@ console.log(html); //outputs: <div>Brad Pitt</div>
 
 Got it? Good. Let's break down what's happening:
 
-Calling `new Brightline()` creates a new instance of the Brightline template engine. We pass to that constructor a *template string*, in this case `<div>{{name}}</div>`. This template string contains a single *variable*, `{{name}}`.
+Calling `new Brightline()` creates a new instance of the Brightline template engine. We pass a *template string* to the constructor, in this case `<div>{{name}}</div>`. This template string contains a single *variable*, `{{name}}`.
 
 Under the hood, Brightline parses this template string, extracting any variables that it finds.
 
-The Brightline constructor returns an instance of the Brightline API, which makes all of the Brightline methods chainable. Using this chaining, we next call the `set()` method, passing to it an object containing a key:value pair: `{ name : 'Brad Pitt' }`.
+The Brightline constructor returns an instance of the Brightline API, which makes all of the Brightline methods *chainable*. Using this chaining, we next call the `set()` method, passing to it an object containing a key:value pair: `{ name : 'Brad Pitt' }`.
 
 Brightline takes the object passed to `set()`, and checks to see whether it contains any variables that were extracted from the template. In this case, it finds `name` and sets the value of the template variable to `Brad Pitt`.
 
@@ -102,16 +102,16 @@ The `set()` method is also chainable, so next we chain it with the `render()` me
 
 #### A note on method chaining
 
-In a simple example like this, method chaining is a nice syntactic sugar. However, in more complex examples, chaining could be more confusing than helpful. For clarity, we could easily write the same code above like this:
+In a simple example like this, method chaining is a nice device. However, in more complex examples, chaining could be more confusing than helpful. For clarity, we could easily write the same code above like this:
 
 ```javascript
-var templateString = '<div>{{name}}</div>';
-var content = { name : 'Brad Pitt' };
-var template = new Brightline(templateString);
+var templateString  = '<div>{{name}}</div>';
+var content         = { name : 'Brad Pitt' };
+var template        = new Brightline(templateString);
 
 template.set(content);
 
-var html = template.render();
+var html            = template.render();
 
 console.log(html); //outputs: <div>Brad Pitt</div>
 ```
@@ -122,27 +122,94 @@ console.log(html); //outputs: <div>Brad Pitt</div>
 
 All of Brightline's power is derived from a handful of simple methods that can be combined in some very powerful ways.
 
-### Brightline(*templateString* [, *options*])
-* REQUIRED: *templateString:* HTML string containing variables and/or blocks
-* OPTIONAL: *options:* Optional object containing configuration options
+### Brightline(*templateString*, *options*)
+* [REQUIRED] *templateString:* HTML string containing variables and/or blocks
+* [OPTIONAL] *options:* Optional object containing configuration options
 
 The Brightline constructor must be passed a template string containing variables and/or blocks.
 
+```javascript
+var template = new Brightline('<div>{{name}}</div>');
+```
+
 You can optionally pass an object containing configuration options:
-* *name*: Plain-English name of the template. This is used in debug logging, to distinguish between log messages coming from multiple Brightline instances.
-* *logLevel*: String containing the level of logging to output to the console (OFF, ERROR, WARN, INFO, DEBUG)
+* *name*: Plain-English name of the template. Same as calling `setName()`.
+* *logLevel*: String containing the level of logging to output to the console. Same as calling `setLogLevel()`
 
+```javascript
+var options = {
+    name : 'Example Template',
+    logLevel : 'DEBUG'
+};
 
-### setName()
+var template = new Brightline('<div>{{name}}</div>',options);
+```
 
+---
 
+### setName(*templateName*)
+* [REQUIRED] *templateName:* Plain-English name of the template
 
+The `setName()` method is used to set the plain-English name of the template. This is used in debug logging, to distinguish between log messages coming from multiple Brightline instances. 
 
-`setName()`
+```javascript
+var template = new Brightline('<div>{{name}}</div>');
+template.setName('Example Template');
 
-`setLogLevel()`
+// console log messages are displayed like [Example Template: Brightline.set()] Setting "name" to Brad Pitt 
+```
 
-`set()`
+---
+
+### setLogLevel(*logLevel*)
+* [REQUIRED] *logLevel:* Log level (OFF, ERROR, WARN, INFO, DEBUG)
+
+The `setLogLevel()` method is used to throttle the amount of log messages that are output to the console. The default is ERROR. 
+
+```javascript
+var template = new Brightline('<div>{{name}}</div>');
+template.setLogLevel('DEBUG');
+```
+
+---
+
+### set(*key*,*value*) or set(*contentObj*)
+* [REQUIRED] *key:* Variable name
+* [REQUIRED] *value:* Variable value
+                    
+**OR**
+
+* [REQUIRED] *contentObj:* Object containing key:value pairs representing variable names and the values with which to replace them.
+
+The `set()` method is used to set the value of a variable in a template. It can be used to set each value individually, like `set(key,value)`, or it can set many values at once by passing a content object, like `set(contentObj)`.
+
+Calling `set()` once will replace *all* instances of the variable in the template. If you want to limit the replacement of a variable to a certain block, you'll need to use `set()` in conjunction with `setScope()`. 
+
+##### set(*key*,*value*)
+```javascript
+var template = new Brightline('{{man}} is married to {{woman}}. {{man}} loves {{woman}} very much.');
+
+template.set('man','Brad');
+template.set('woman','Angelina');
+
+// When rendered, the template will read:
+// Brad is married to Angelina. Brad loves Angelina very much.
+```
+
+##### set(*contentObj*)
+```javascript
+var template = new Brightline('{{man}} is married to {{woman}}. {{man}} loves {{woman}} very much.');
+
+template.set({
+    man     : 'Brad',
+    woman   : 'Angelina'
+});
+
+// When rendered, the template will read:
+// Brad is married to Angelina. Brad loves Angelina very much.
+```
+
+---
 
 `parse()`
 
