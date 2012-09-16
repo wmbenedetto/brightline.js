@@ -211,11 +211,79 @@ template.set({
 
 ---
 
+### setScope(*blockName*)
+* [REQUIRED] *blockName:* The name of the block to which the scope will be set
+
+The `setScope()` method is used to limit the scope of variable replacements to a specific block. 
+
+This is useful when you want to use the same variable name in multiple blocks while only parsing it in certain blocks:
+
+```javascript
+var tpl = '<!-- BEGIN block1 -->';
+tpl += '<p>{{name}} is a great actor</p>';
+tpl += '<!-- END block1 -->';
+tpl += '<!-- BEGIN block2 -->';
+tpl += '<p>{{name}} is a great football player</p>';
+tpl += '<!-- END block2 -->';
+
+var template = new Brightline(tpl);
+template.setScope('block1');
+template.set('name','Brad Pitt'); // This will only set {{name}} in block1
+
+// When rendered, the template will read:
+// <p>Brad is a great actor</p>
+```
+This is also useful when you want to set different values for the same variable in different blocks:
+
+```javascript
+var tpl = '<!-- BEGIN block1 -->';
+tpl += '<p>{{name}} is a great actor</p>';
+tpl += '<!-- END block1 -->';
+tpl += '<!-- BEGIN block2 -->';
+tpl += '<p>{{name}} is a great football player</p>';
+tpl += '<!-- END block2 -->';
+
+var template = new Brightline(tpl);
+template.setScope('block1');
+template.set('name','Brad Pitt'); // This will set {{name}} in block1
+template.setScope('block2');
+template.set('name','Eli Manning'); // This will set {{name}} in block2
+
+// When rendered, the template will read:
+// <p>Brad Pitt is a great actor</p><p>Eli Manning is a great football player</p>
+```
+
+---
+
+### clearScope()
+
+The `clearScope()` method clears a previously set scope, restoring the global scope.
+
+This is useful when you've already called setScope(), and you now want to replace variables in all blocks:
+
+```javascript
+var tpl = '<!-- BEGIN block1 -->';
+tpl += '<p>{{name}} is a {{adjective}} actor</p>';
+tpl += '<!-- END block1 -->';
+tpl += '<!-- BEGIN block2 -->';
+tpl += '<p>{{name}} is a {{adjective}} football player</p>';
+tpl += '<!-- END block2 -->';
+
+var template = new Brightline(tpl);
+template.setScope('block1');
+template.set('name','Brad Pitt'); // This will set {{name}} in block1
+template.setScope('block2');
+template.set('name','Eli Manning'); // This will set {{name}} in block2
+template.clearScope();
+template.set('adjective','great'); // This will set {{adjective}} in both blocks
+
+// When rendered, the template will read:
+// <p>Brad Pitt is a great actor</p><p>Eli Manning is a great football player</p>
+```
+
+---
+
 `parse()`
-
-`setScope()`
-
-`clearScope()`
 
 `touch()`
 
