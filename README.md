@@ -117,6 +117,7 @@ console.log(html); //outputs: <div>Brad Pitt</div>
 ```
 
 ## Templates
+## Best practices
 
 ## API
 
@@ -280,12 +281,77 @@ template.set('adjective','great'); // This will set {{adjective}} in both blocks
 // When rendered, the template will read:
 // <p>Brad Pitt is a great actor</p><p>Eli Manning is a great football player</p>
 ```
-
 ---
 
-`parse()`
+### parse(*blockName*)
+* [REQUIRED] *blockName:* The name of the block to parse
 
-`touch()`
+The `parse()` method adds a block to the rendered template. By default, `parse()` is called internally whenever a variable is set. In other words, setting a variable will result in an blocks containing the variable to be automatically added to the rendered template.
+
+However, sometimes you'll want to add a block to the rendered template multiple times, such as when looping through an array or object:
+
+```javascript
+var tpl = "<ul>\n";
+tpl += '<!-- BEGIN item -->';
+tpl += '<li>{{name}}</li>'+"\n";
+tpl += '<!-- END item -->';
+tpl += "\n</ul>";
+
+var actors = ['Brad Pitt','George Clooney','Matt Damon'];
+var template = new Brightline(tpl);
+
+for (var i=0;i<actors.length;i++){
+    
+    template.set('name',actors[i]);
+    template.parse('item'); // each time this is called, the item block is added to the rendered template
+}
+
+// When rendered, the template will read:
+// <ul>
+//<li>Brad Pitt</li>
+//<li>George Clooney</li>
+//<li>Matt Damon</li>
+//</ul>
+```
+---
+
+### touch(*blockName*)
+* [REQUIRED] *blockName:* The name of the block to touch
+
+The `touch()` method adds a block to the rendered template, even when it doesn't have any variables in it. 
+
+```javascript
+
+var tpl = '<!-- BEGIN error -->';
+tpl += 'Something bad happened!';
+tpl += '<!-- END error -->';
+tpl += '<!-- BEGIN success -->';
+tpl += 'It worked!';
+tpl += '<!-- END success -->';
+
+var template = new Brightline(tpl);
+template.touch('error');
+
+// When rendered, the template will read:
+// Something bad happened!
+```
+
+The `touch()` method works similar to `parse()`, in that it can be called multiple times to add the block more than onceto the rendered template:
+
+```javascript
+
+var tpl = 'I am <!-- BEGIN howMuch -->very, <!-- END howMuch --> happy to see you!';
+
+var template = new Brightline(tpl);
+
+for (var i=0;i<4;i++){
+    template.touch('howMuch');
+}
+
+// When rendered, the template will read:
+// I am very, very, very, very, happy to see you!
+```
+---
 
 `snip()`
 
