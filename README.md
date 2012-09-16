@@ -2,62 +2,9 @@
 
 Brightline.js is a JavaScript Template Engine for people who demand a clean separation (a *bright line*) between presentation and logic.
 
-## Another JavaScript template engine? Seriously? Are you f*cking insane?
+#### Another JavaScript template engine? Are you f*cking serious?
 
-Yes. Seriously. And here's why:
-
-The majority of the popular JavaScript template engines (Handlebars, Mustache, jQuery, etc.) blur the line between
-presentation and logic. Their templates are full of noise: control structures, loops, helpers, arguments, and all
-sorts of other constructs that move the logic of how to render templates into the templates themselves.
-
-*I hate this.*
-
----
-
-**First of all,** it forces the developer to essentially learn a whole new markup language in order to write and/or understand the templates.
-Sure, some of it is simple and self-explanatory. Most people won't be tripped up by an `{{#if}}` or an `{{#else}}` or even an `{{#each}}`.
-
-But what about a `{{#list nav id="nav-bar" class="top"}}` tag?
-
-Hmm. Not so sure about that one. Is that a feature of the templating engine? A custom helper? What does the pound symbol mean?
-Why are there two key=value pairs, but `nav` is all by itself? Is it lonely? Do the other pairs make fun of it because it doesn't
-have any friends? They probably do. Jerks.
-
-Let's check the template engine's docs for `list` or `nav`. Nope not there. Okay, so it must be a helper. Wonder what it does ...?
-
-If I had to guess, I'd say it creates a `<nav>` element with an id of `list`, since that pound symbol means `id` in css and jQuery.
-But, uh, there's also an `id="nav-bar"`, so maybe *that's* the id ...? Damnit, better find the helper code to be sure.
-
-So you comb through the JavaScript for a while, and finally you find this:
-
-```javascript
-Template.registerHelper('list', function(context, options) {
-  var attrs = SC.keys(options.hash).map(function(key) {
-    key + '="' + options.hash[key] + '"';
-  }).join(" ");
-
-  return "<ul " + attrs + ">" + context.map(function(item) {
-    return "<li>" + options.fn(item) + "</li>";
-  }).join("\n") + "</ul>";
-});
-```
-
-Holy hell. What a nightmare. HTML tags in the JavaScript? What is this, the 90's? 
-
-And what's `context`? What's `options`? What's `options.hash`? Or `options.fn`? Back to the template engine docs again ...
-
----
-
-**Second**, the markup for these template engines often tightly couples the template to the structure of the object used to populate the template. This limits the reusability of your templates. 
-
-For example, if your template for an unordered list has `{{#each dogs}}`, you must pass it an object with a `dogs` property. Want to display `cats` using the same template? Sorry. You'll have to duplicate all your markup, and wrap it in `{{#each cats}}`.
-
-Tightly coupling the template to the object structure also makes the templates more brittle. If the object changes -- say, `dogs` changes to `pets` -- then your templates will break.
-
----
-
-**Third**, most of the major template engines do some sort of eval'ing under the hood. Either they use `eval()` directly, or via `new Function()`. Not only is this a security risk, but it means that the template engines are completely unusable in contexts where the Content-Security-Policy disallows eval, such as in Google Chrome extensions.
-
+You bet your ass. If you want to know why, check out the [Why Brightline?](#why-brightline) section.
 
 ## Features
 
@@ -157,7 +104,8 @@ The `setName()` method is used to set the plain-English name of the template. Th
 var template = new Brightline('<div>{{name}}</div>');
 template.setName('Example Template');
 
-// console log messages are displayed like [Example Template: Brightline.set()] Setting "name" to Brad Pitt 
+// console log messages are displayed like:
+// [Example Template: Brightline.set()] Setting "name" to Brad Pitt 
 ```
 
 ---
@@ -232,7 +180,7 @@ template.setScope('block1');
 template.set('name','Brad Pitt'); // This will only set {{name}} in block1
 
 // When rendered, the template will read:
-// <p>Brad is a great actor</p>
+// <p>Brad Pitt is a great actor</p>
 ```
 This is also useful when you want to set different values for the same variable in different blocks:
 
@@ -286,7 +234,7 @@ template.set('adjective','great'); // This will set {{adjective}} in both blocks
 ### parse(*blockName*)
 * [REQUIRED] *blockName:* The name of the block to parse
 
-The `parse()` method adds a block to the rendered template. By default, `parse()` is called internally whenever a variable is set. In other words, setting a variable will result in an blocks containing the variable to be automatically added to the rendered template.
+The `parse()` method adds a block to the rendered template. By default, `parse()` is called internally whenever a variable is set. In other words, setting a variable will result in any blocks containing the variable to be automatically added to the rendered template.
 
 However, sometimes you'll want to add a block to the rendered template multiple times, such as when looping through an array or object:
 
@@ -353,16 +301,162 @@ for (var i=0;i<4;i++){
 ```
 ---
 
-`snip()`
+### render(*blockName*)
+* [OPTIONAL] *blockName:* The name of the block to render. If no block is specified, the entire template is rendered.
 
-`render()`
+The `render()` method returns a template string in which all variables have been replaced and blocks have been parsed and/or touched.
+
+The most common use of the `render()` method is to call it with no arguments, so it returns the full rendered template:
+
+```javascript
+var template = new Brightline('{{man}} is married to {{woman}}. {{man}} loves {{woman}} very much.');
+
+template.set('man','Brad');
+template.set('woman','Angelina');
+
+var html = template.render(); // Returns: Brad is married to Angelina. Brad loves Angelina very much.
+```
+
+The `render()` method can also be used to render individual blocks from a template:
+
+```javascript
+
+// Imagine you have all your buttons in one template file, so they can be re-used in many pages
+var tpl = '<!-- BEGIN continue -->';
+tpl += '<img src="continueButton.png" alt="{{altText}}" />';
+tpl += '<!-- END continue -->';
+tpl += '<!-- BEGIN buy -->';
+tpl += '<img src="buyButton.png" alt="{{altText}}" />';
+tpl += '<!-- END buy -->';
+
+var template = new Brightline(tpl);
+
+template.setScope('continue');
+template.set('altText','Continue');
+
+var continueButton = template.render('continue');
+
+template.setScope('buy');
+template.set('altText','Buy Now');
+
+var buyButton = template.render('buy');
+
+
+// Now imagine you have a shopping cart page that uses some buttons
+var tpl2 = '{{buyButton}} {{continueButton}}';
+
+var template2 = new Brightline(tpl2);
+template2.set('buyButton',buyButton);
+template2.set('continueButton',continueButton);
+
+var html = template2.render();
+
+// When template2 is rendered, html contains:
+// <img src="buyButton.png" alt="Buy Now" /> <img src="continueButton.png" alt="Continue" />
+```
+
+**IMPORTANT:** `render()` should be used to render the entire template OR to render individual blocks. You should never call `render()` using a block name, then call it again with no block name. If do you, you will get unexpected results.
+
+---
+
+### snip(*blockName*)
+* [REQUIRED] *blockName:* The name of the block to snip
+
+The `snip()` method gets the rendered content of a block, without actually touching it (so it won't appear in the rendered template itself). This is useful when there's content in a template that you want to pull into a variable.
+
+```javascript
+
+var tpl = '<!-- BEGIN error -->';
+tpl += 'Something bad happened!';
+tpl += '<!-- END error -->';
+tpl += '<!-- BEGIN success -->';
+tpl += 'It worked!';
+tpl += '<!-- END success -->';
+tpl += '<!-- BEGIN logMessage -->';
+tpl += 'Error code: {{errorCode}}';
+tpl += '<!-- END logMessage -->';
+
+var template = new Brightline(tpl);
+template.touch('error');
+template.set('errorCode','100.1234');
+var logMessage = template.snip('logMessage');
+console.error(logMessage);
+
+// When rendered, the template will read:
+// Something bad happened!
+
+// Meanwhile, the console will display this error:
+// Error code: 100.1234
+```
+---
 
 
 ## Examples
 
+## Why Brightline?
 
-## License
+The majority of the popular JavaScript template engines (Handlebars, Mustache, jQuery, etc.) blur the line between
+presentation and logic. Their templates are full of noise: control structures, loops, helpers, arguments, and all
+sorts of other constructs that move the logic of how to render templates into the templates themselves.
 
+*I hate this.*
+
+---
+
+**First of all,** it forces the developer to essentially learn a whole new markup language in order to write and/or understand the templates.
+Sure, some of it is simple and self-explanatory. Most people won't be tripped up by an `{{#if}}` or an `{{#else}}` or even an `{{#each}}`.
+
+But what about a `{{#list nav id="nav-bar" class="top"}}` tag?
+
+Hmm. Not so sure about that one. Is that a feature of the templating engine? A custom helper? What does the pound symbol mean?
+Why are there two key=value pairs, but `nav` is all by itself? Is it lonely? Do the other pairs make fun of it because it doesn't
+have any friends? They probably do. Jerks.
+
+Let's check the template engine's docs for `list` or `nav`. Nope not there. Okay, so it must be a helper. Wonder what it does ...?
+
+If I had to guess, I'd say it creates a `<nav>` element with an id of `list`, since that pound symbol means `id` in css and jQuery.
+But, uh, there's also an `id="nav-bar"`, so maybe *that's* the id ...? Damnit, better find the helper code to be sure.
+
+So you comb through the JavaScript for a while, and finally you find this:
+
+```javascript
+Template.registerHelper('list', function(context, options) {
+  var attrs = SC.keys(options.hash).map(function(key) {
+    key + '="' + options.hash[key] + '"';
+  }).join(" ");
+
+  return "<ul " + attrs + ">" + context.map(function(item) {
+    return "<li>" + options.fn(item) + "</li>";
+  }).join("\n") + "</ul>";
+});
+```
+
+Holy hell. What a nightmare. HTML tags in the JavaScript? What is this, the 90's? 
+
+And what's `context`? What's `options`? What's `options.hash`? Or `options.fn`? Back to the template engine docs again ...
+
+---
+
+**Second**, the markup for these template engines often tightly couples the template to the structure of the object used to populate the template. This limits the reusability of your templates. 
+
+For example, if your template for an unordered list has `{{#each dogs}}`, you must pass it an object with a `dogs` property. Want to display `cats` using the same template? Sorry. You'll have to duplicate all your markup, and wrap it in `{{#each cats}}`.
+
+Tightly coupling the template to the object structure also makes the templates more brittle. If the object changes -- say, `dogs` changes to `pets` -- then your templates will break.
+
+---
+
+**Third**, most of the major template engines do some sort of eval'ing under the hood. Either they use `eval()` directly, or via `new Function()`. Not only is this a security risk, but it means that the template engines are completely unusable in contexts where the Content-Security-Policy disallows eval, such as in Google Chrome extensions.
+
+
+## MIT License
+
+Copyright (c) 2012 Warren Benedetto <warren@transfusionmedia.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Other projects
 
