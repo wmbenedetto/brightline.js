@@ -541,6 +541,61 @@ template.set('name','Eli Manning');
 template.render(); // Returns: Eli Manning is a quarterback 
 ```
 ---
+#### If a variable is set in a child block, or a child block is touched, then the parent block is automatically parsed.
+
+```html
+<!-- BEGIN someBlock -->
+
+{{name}} is a {{adjective}} quarterback.
+
+    <!-- BEGIN photo -->
+    <img src="{{photoURL}}" />
+    <!-- END photo -->
+    
+<!-- END someBlock -->
+```
+
+```javascript
+var template = new Brightline(templateString);
+template.set('photoURL','eli.jpg');
+template.render();
+```
+
+This will return:
+
+```html
+is a quarterback
+<img src="eli.jpg" />
+```
+
+Why?
+
+The `photoURL` variable is in the `photo` block, which is a child of the `someBlock` block. When `photoURL` is set, the child block is automatically parsed ... which automatically parses the parent block as well.
+
+We haven't set any values for `name` or `adjective`, so those variables are replaced with empty strings. However, the rest of the test from that sentence is still rendered.
+
+The solution is simple: Wrap the rest of the content of `someBlock` in its own block:
+
+```html
+<!-- BEGIN someBlock -->
+
+    <!-- BEGIN description -->
+    {{name}} is a {{adjective}} quarterback.
+    <!-- END description -->
+
+    <!-- BEGIN photo -->
+    <img src="{{photoURL}}" />
+    <!-- END photo -->
+    
+<!-- END someBlock -->
+```
+
+When this template is rendered, the `description` block is left unparsed, since none of its variables have been set. Therefore, the result is what you'd expect:
+
+```html
+<img src="eli.jpg" />
+```
+---
 #### When rendering a template, Brightline respects the order of your source template's markup.
 
 In other words, the order in which you call Brightline methods does not affect the order in which the elements appear in the rendered template.
