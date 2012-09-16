@@ -504,7 +504,7 @@ console.error(logMessage);
 
 ## Understanding rendering
 
-In some cases, it may be helpful to understand how Brightline renders templates.
+In some cases, it may be helpful to understand how Brightline renders templates. If your template isn't rendering like you expect, some of the topics below may help you understand why.
 
 * [Unused variables are replaced with empty strings when the template is rendered.](#unused-variables-are-replaced-with-empty-strings-when-the-template-is-rendered)
 * [If a variable in a block is set, the block is automatically parsed.](#if-a-variable-in-a-block-is-set-the-block-is-automatically-parsed)
@@ -813,19 +813,21 @@ sorts of other constructs that move the logic of how to render templates into th
 
 ---
 
-**First of all,** it forces the developer to essentially learn a whole new markup language in order to write and/or understand the templates.
-Sure, some of it is simple and self-explanatory. Most people won't be tripped up by an `{{#if}}` or an `{{#else}}` or even an `{{#each}}`.
+**First of all,** it forces the developer to essentially learn a whole new markup language in order to write and/or understand the templates. Sure, some of it is simple and self-explanatory. Most people won't be tripped up by an `{{#if}}` or an `{{#else}}` or even an `{{#each}}`.
 
 But what about a `{{#list nav id="nav-bar" class="top"}}` tag?
 
-Hmm. Not so sure about that one. Is that a feature of the templating engine? A custom helper? What does the pound symbol mean?
-Why are there two key=value pairs, but `nav` is all by itself? Is it lonely? Do the other pairs make fun of it because it doesn't
-have any friends? They probably do. Jerks.
+Hmm. Not so sure about that one. Is that a feature of the templating engine? A custom helper? What does the pound symbol mean? Why are there two key=value pairs, but `nav` is all by itself? Is it lonely? Do the other pairs make fun of it because it doesn't have any friends? They probably do. Jerks.
 
-Let's check the template engine's docs for `list` or `nav`. Nope not there. Okay, so it must be a helper. Wonder what it does ...?
+Let's check the template engine's docs for `list` or `nav`. Nope not there. 
 
-If I had to guess, I'd say it creates a `<nav>` element with an id of `list`, since that pound symbol means `id` in css and jQuery.
-But, uh, there's also an `id="nav-bar"`, so maybe *that's* the id ...? Damnit, better find the helper code to be sure.
+Okay, so it must be a helper. Wonder what it does ...?
+
+If I had to guess, I'd say it creates a `<nav>` element with an id of `list`, since that pound symbol means `id` in css and jQuery. 
+
+But, uh, there's also an `id="nav-bar"`, so maybe *that's* the id ...? 
+
+Damnit, better find the helper code to be sure.
 
 So you comb through the JavaScript for a while, and finally you find this:
 
@@ -841,9 +843,13 @@ Template.registerHelper('list', function(context, options) {
 });
 ```
 
-Holy hell. What a nightmare. HTML tags in the JavaScript? What is this, the 90's? 
+Holy hell. What a nightmare. 
 
-And what's `context`? What's `options`? What's `options.hash`? Or `options.fn`? Back to the template engine docs again ...
+HTML tags in the JavaScript? What is this, the 90's? 
+
+And what's `context`? What's `options`? What's `options.hash`? Or `options.fn`? 
+
+Back to the template engine docs again ...
 
 ---
 
@@ -855,8 +861,17 @@ Tightly coupling the template to the object structure also makes the templates m
 
 ---
 
-**Third**, most of the major template engines do some sort of eval'ing under the hood. Either they use `eval()` directly, or via `new Function()`. Not only is this a security risk, but it means that the template engines are completely unusable in contexts where the Content-Security-Policy disallows eval, such as in Google Chrome extensions.
+**Third**, most of the major template engines do some sort of eval'ing under the hood. Either they use `eval()` directly, or via `new Function()`. Not only is this a security risk, but it means that the template engines are completely unusable in contexts where the Content-Security-Policy disallows eval.
 
+I found this out the hard way when I implemented Handlebars in [StayFocusd](https://chrome.google.com/webstore/detail/laankejkbhbdhmipfmgcngdelahlfoji), my Google Chrome extension. Chrome recently made their Content-Security-Policy extremely strict, disallowing `eval()` in every possible way. Unfortunately, this also made every templating library I could find completely unusable. 
+
+So I wrote my own.
+
+# Questions? Bugs? Suggestions?
+
+Please submit all bugs, questions, and suggestions via the [Issues](https://github.com/wmbenedetto/brightline.js/issues) section so everyone can benefit from the answer.
+
+If you need to contact me directly, email warren@transfusionmedia.com.
 
 ## MIT License
 
@@ -867,8 +882,3 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-# Other projects
-
-
-# Questions?
