@@ -94,8 +94,14 @@ This is the simplest possible use of Brightline:
 
 ```javascript
 new Brightline('<div>{{name}}</div>').set({ name : 'Brad Pitt' }).render();
-// Returns: <div>Brad Pitt</div>
 ```
+###### Result:
+
+```html
+<div>Brad Pitt</div>
+```
+
+
 
 Got it? Good. Let's break down what's happening:
 
@@ -936,7 +942,7 @@ Now you'll get what you wanted:
 <img src="matt.jpg" /> Matt Damon
 ```
 
-# Questions? Bugs? Suggestions?
+## Questions? Bugs? Suggestions?
 
 Please submit all bugs, questions, and suggestions via the [Issues](https://github.com/wmbenedetto/brightline.js/issues) section so everyone can benefit from the answer.
 
