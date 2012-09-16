@@ -1,10 +1,76 @@
 # brightline.js
 
-Brightline.js is a JavaScript Template Engine for people who demand a clean separation (a *bright line*) between presentation and logic.
+Brightline.js is a JavaScript template engine for people who demand a clean separation (a *bright line*) between presentation and logic.
 
 #### Another JavaScript template engine? Are you f*cking serious?
 
-You bet your ass. If you want to know why you should use Brightline (or why you shouldn't), check out the [Why Brightline?](#why-brightline) section.
+You bet your ass. If you want to know why you should use Brightline (or why you shouldn't), continue reading. 
+
+If you'd rather jump right into using Brightline, skip ahead to the [Quick Start](#quick-start) section.
+
+## Why Brightline?
+
+The majority of the popular JavaScript template engines (Handlebars, Mustache, jQuery, etc.) blur the line between
+presentation and logic. Their templates are full of noise: control structures, loops, helpers, arguments, and all
+sorts of other constructs that move the logic of how to render templates into the templates themselves.
+
+*I hate this.*
+
+---
+
+**First of all,** they force the developer to essentially learn a whole new markup language in order to write and/or understand the templates. Sure, some of it is simple and self-explanatory. Most people won't be tripped up by an `{{#if}}` or an `{{#else}}` or even an `{{#each}}`.
+
+But what about a `{{#list nav id="nav-bar" class="top"}}` tag?
+
+Hmm. Not so sure about that one. Is that a feature of the templating engine? A custom helper? What does the pound symbol mean? Why are there two key=value pairs, but `nav` is all by itself? Is it lonely? Do the other pairs make fun of it because it doesn't have any friends? They probably do. Jerks.
+
+Let's check the template engine's docs for `list` or `nav`. Nope not there. 
+
+Okay, so it must be a custom helper of some kind. Wonder what it does ...?
+
+If I had to guess, I'd say it creates a `<nav>` element with an id of `list`, since that pound symbol means `id` in css and jQuery. 
+
+But, uh, there's also an `id="nav-bar"`, so maybe *that's* the id ...? 
+
+Damnit, better find the helper code to be sure.
+
+So I comb through the JavaScript for a while, and finally I find this:
+
+```javascript
+Template.registerHelper('list', function(context, options) {
+  var attrs = SC.keys(options.hash).map(function(key) {
+    key + '="' + options.hash[key] + '"';
+  }).join(" ");
+
+  return "<ul " + attrs + ">" + context.map(function(item) {
+    return "<li>" + options.fn(item) + "</li>";
+  }).join("\n") + "</ul>";
+});
+```
+
+Holy hell. What a nightmare. 
+
+HTML tags in the JavaScript? What is this, the 90's? 
+
+And what's `context`? What's `options`? What's `options.hash`? Or `options.fn`? 
+
+Back to the template engine docs again ...
+
+---
+
+**Second**, the markup for these template engines often tightly couples the template to the structure of the object used to populate the template. This limits the reusability of your templates. 
+
+For example, if your template for an unordered list has `{{#each dogs}}`, you must pass it an object with a `dogs` property. Want to display `cats` using the same template? Sorry. You'll have to duplicate all your markup, and wrap it in `{{#each cats}}`.
+
+Tightly coupling the template to the object structure also makes the templates more brittle. If the object changes -- say, `dogs` changes to `pets` -- then your templates will break.
+
+---
+
+**Third**, most of the major template engines do some sort of eval'ing under the hood. Either they use `eval()` directly, or via `new Function()`. Not only is this a security risk, but it means that the template engines are completely unusable in contexts where the Content-Security-Policy disallows eval.
+
+I found this out the hard way when I implemented Handlebars in [StayFocusd](https://chrome.google.com/webstore/detail/laankejkbhbdhmipfmgcngdelahlfoji), my Google Chrome extension. Chrome recently made [their Content-Security-Policy](https://developer.chrome.com/extensions/contentSecurityPolicy.html) extremely strict, disallowing `eval()` in every possible way. Unfortunately, this also made every templating library I could find completely unusable. 
+
+So I wrote my own.
 
 ## Features
 
@@ -27,8 +93,8 @@ Because the template logic is in your JavaScript code, there's no need for Brigh
 This is the simplest possible use of Brightline:
 
 ```javascript
-var html = new Brightline('<div>{{name}}</div>').set({ name : 'Brad Pitt' }).render();
-console.log(html); //outputs: <div>Brad Pitt</div>
+new Brightline('<div>{{name}}</div>').set({ name : 'Brad Pitt' }).render();
+// Returns: <div>Brad Pitt</div>
 ```
 
 Got it? Good. Let's break down what's happening:
@@ -59,11 +125,9 @@ var html            = template.render();
 console.log(html); //outputs: <div>Brad Pitt</div>
 ```
 
-## Templates
+## Template syntax
 
-Brightline templates are incredibly, delightfully simple. There are only two main concepts: *variables* and *blocks*. 
-
-That's it.
+Brightline templates are incredibly, delightfully simple. There are only two main concepts: *variables* and *blocks*. That's it.
 
 ### Variables
 
@@ -108,14 +172,63 @@ Blocks can also be nested:
 </ul>
 ```
 
+## Loading templates
+
+### Inline
+
+The easiest way to load a template is to include it in your html page, wrapped in special `x-brightline-template` script tags. Using `script` tags ensures that the template markup isn't visible in the page.
+
+```html
+<html>
+<head>
+<title>Example</title>
+<script language="JavaScript" type="text/javascript" src="src/Brightline.js"></script>
+</head>
+<body></body>
+
+<script id="myTemplate" type="text/x-brightline-template">
+    <div>
+        <h1>This is my template</h1>
+        <h2>Current mood: {{mood}}</h2>
+    </div>
+</script>
+
+</html>
+```
+
+You can then pull the template into a JavaScript variable with a simple `getElementById()`:
+
+```javascript
+var templateString = document.getElementById('myTemplate').innerHTML;
+```
+
+Use the `templateString` to create a new Brightline template, and you're off to the races:
+
+```javascript
+var template = new Brightline(templateString);
+
+template.set('mood','happy');
+
+// Replace contents of body tag with rendered template
+document.getElementsByTagName('body')[0].innerHTML = template.render();
+
+// Once you're done with the template, you can optionally wipe it out, to reduce the amount of markup on the page
+document.getElementById('myTemplate').innerHTML = '';
+```
+
+### AJAX
+
+Another way to load templates is to fetch them as html files off a server, via AJAX. Explaining how to do that is outside the scope of these docs -- if you don't know how to do it, the [jQuery AJAX docs](http://api.jquery.com/category/ajax/) are a good start.
+
+### HTML5 
+
+If you're building a browser extension or some other app that is designed to run on the local file system, you may be able to use the HTML5 File API to load your templates from disk. [HTML5 Rocks](http://www.html5rocks.com/en/tutorials/file/dndfiles/) has a good tutorial to get you started.
 
 ## API
 
-All of Brightline's power is derived from a handful of simple methods that can be combined in some very powerful ways.
+All of Brightline's power is derived from a handful of simple methods:
 
  * [Brightline(*templateString*,*options*)](#brightlinetemplatestring-options)
- * [setName(*templateName*)](#setnametemplatename)
- * [setLogLevel(*logLevel*)](#setloglevelloglevel)
  * [set(*key*,*value*) OR set(*contentObj*)](#setkeyvalue-or-setcontentobj)
  * [setScope(blockName)](#setscopeblockname)
  * [clearScope()](#clearscope)
@@ -143,8 +256,8 @@ var template = new Brightline(templateString);
 ```
 
 You can optionally pass an object containing configuration options:
-* *name*: Plain-English name of the template. Same as calling `setName()`.
-* *logLevel*: String containing the level of logging to output to the console. Same as calling `setLogLevel()`
+* *name*: Plain-English name of the template. This is used in debug logging, to distinguish between log messages coming from multiple Brightline instances. 
+* *logLevel*: String containing the level of logging to output to the console (OFF, ERROR, WARN, INFO, DEBUG)
 
 ```html
 <div>{{name}}</div>
@@ -157,41 +270,6 @@ var options = {
 };
 
 var template = new Brightline(templateString,options);
-```
-
----
-
-### setName(*templateName*)
-* [REQUIRED] *templateName:* Plain-English name of the template
-
-The `setName()` method is used to set the plain-English name of the template. This is used in debug logging, to distinguish between log messages coming from multiple Brightline instances. 
-
-```html
-<div>{{name}}</div>
-```
-
-```javascript
-var template = new Brightline(templateString);
-template.setName('Example Template');
-
-// console log messages are displayed like:
-// [Example Template: Brightline.set()] Setting "name" to Brad Pitt 
-```
-
----
-
-### setLogLevel(*logLevel*)
-* [REQUIRED] *logLevel:* Log level (OFF, ERROR, WARN, INFO, DEBUG)
-
-The `setLogLevel()` method is used to throttle the amount of log messages that are output to the console. The default is ERROR. 
-
-```html
-<div>{{name}}</div>
-```
-
-```javascript
-var template = new Brightline(templateString);
-template.setLogLevel('DEBUG');
 ```
 
 ---
@@ -219,9 +297,12 @@ var template = new Brightline(templateString);
 
 template.set('man','Brad');
 template.set('woman','Angelina');
+```
 
-// When rendered, the template will read:
-// Brad is married to Angelina. Brad loves Angelina very much.
+###### Result:
+
+```html
+Brad is married to Angelina. Brad loves Angelina very much.
 ```
 
 ##### set(*contentObj*)
@@ -237,9 +318,12 @@ template.set({
     man     : 'Brad',
     woman   : 'Angelina'
 });
+```
 
-// When rendered, the template will read:
-// Brad is married to Angelina. Brad loves Angelina very much.
+###### Result:
+
+```html
+Brad is married to Angelina. Brad loves Angelina very much.
 ```
 
 ---
@@ -265,10 +349,13 @@ This is useful when you want to use the same variable name in multiple blocks wh
 var template = new Brightline(templateString);
 template.setScope('block1');
 template.set('name','Brad Pitt'); // This will only set {{name}} in block1
-
-// When rendered, the template will read:
-// <p>Brad Pitt is a great actor</p>
 ```
+###### Result:
+
+```html
+<p>Brad Pitt is a great actor</p>
+```
+
 This is also useful when you want to set different values for the same variable in different blocks:
 
 ```html
@@ -287,9 +374,12 @@ template.setScope('block1');
 template.set('name','Brad Pitt'); // This will set {{name}} in block1
 template.setScope('block2');
 template.set('name','Eli Manning'); // This will set {{name}} in block2
+```
+###### Result:
 
-// When rendered, the template will read:
-// <p>Brad Pitt is a great actor</p><p>Eli Manning is a great football player</p>
+```html
+<p>Brad Pitt is a great actor</p>
+<p>Eli Manning is a great football player</p>
 ```
 
 ---
@@ -318,9 +408,12 @@ template.setScope('block2');
 template.set('name','Eli Manning'); // This will set {{name}} in block2
 template.clearScope();
 template.set('adjective','great'); // This will set {{adjective}} in both blocks
+```
+###### Result:
 
-// When rendered, the template will read:
-// <p>Brad Pitt is a great actor</p><p>Eli Manning is a great football player</p>
+```html
+<p>Brad Pitt is a great actor</p>
+<p>Eli Manning is a great football player</p>
 ```
 ---
 
@@ -348,13 +441,15 @@ for (var i=0;i<actors.length;i++){
     template.set('name',actors[i]);
     template.parse('item'); // each time this is called, the item block is added to the rendered template
 }
+```
+###### Result:
 
-// When rendered, the template will read:
-// <ul>
-//     <li>Brad Pitt</li>
-//     <li>George Clooney</li>
-//     <li>Matt Damon</li>
-// </ul>
+```html
+<ul>
+    <li>Brad Pitt</li>
+    <li>George Clooney</li>
+    <li>Matt Damon</li>
+</ul>
 ```
 ---
 
@@ -376,9 +471,11 @@ It worked!
 ```javascript
 var template = new Brightline(templateString);
 template.touch('error');
+```
+###### Result:
 
-// When rendered, the template will read:
-// Something bad happened!
+```html
+Something bad happened!
 ```
 
 The `touch()` method works similar to `parse()`, in that it can be called multiple times to add the block more than onceto the rendered template:
@@ -393,9 +490,11 @@ var template = new Brightline(templateString);
 for (var i=0;i<4;i++){
     template.touch('howMuch');
 }
+```
+###### Result:
 
-// When rendered, the template will read:
-// I am very, very, very, very, happy to see you!
+```html
+I am very, very, very, very, happy to see you!
 ```
 ---
 
@@ -416,7 +515,12 @@ var template = new Brightline(templateString);
 template.set('man','Brad');
 template.set('woman','Angelina');
 
-var html = template.render(); // Returns: Brad is married to Angelina. Brad loves Angelina very much.
+var html = template.render();
+```
+###### Result:
+
+```html
+Brad is married to Angelina. Brad loves Angelina very much.
 ```
 
 The `render()` method can also be used to render individual blocks from a template:
@@ -457,9 +561,11 @@ template2.set('buyButton',buyButton);
 template2.set('continueButton',continueButton);
 
 var html = template2.render();
+```
+###### Result:
 
-// When template2 is rendered, html contains:
-// <img src="buyButton.png" alt="Buy Now" /> <img src="continueButton.png" alt="Continue" />
+```html
+<img src="buyButton.png" alt="Buy Now" /> <img src="continueButton.png" alt="Continue" />
 ```
 
 **IMPORTANT:** `render()` should be used to render the entire template OR to render individual blocks. You should never call `render()` using a block name, then call it again with no block name. If do you, you will get unexpected results.
@@ -493,13 +599,12 @@ template.set('errorCode','100.1234');
 
 var logMessage = template.snip('logMessage');
 
-console.error(logMessage);
+console.error(logMessage); // The console will display: Error code: 100.1234
+```
+###### Result:
 
-// When rendered, the template will read:
-// Something bad happened!
-
-// Meanwhile, the console will display this error:
-// Error code: 100.1234
+```html
+Something bad happened!
 ```
 
 ## Understanding rendering
@@ -526,7 +631,12 @@ Notice in the example below that `{{adjective}}` is not set, and is therefore no
 ```javascript
 var template = new Brightline(templateString);
 template.set('name','Eli Manning');
-template.render(); // Returns: Eli Manning is a quarterback 
+template.render();
+```
+###### Result:
+
+```html
+Eli Manning is a quarterback 
 ```
 ---
 #### If a variable in a block is set, the block is automatically parsed.
@@ -542,7 +652,12 @@ Even though `someBlock` is not explicitly parsed using `parse()`, it is still in
 ```javascript
 var template = new Brightline(templateString);
 template.set('name','Eli Manning');
-template.render(); // Returns: Eli Manning is a quarterback 
+template.render();
+```
+###### Result:
+
+```html
+Eli Manning is a quarterback 
 ```
 ---
 #### If a block doesn't have any variables set, it will not be parsed unless it is touched with `touch()`
@@ -562,10 +677,17 @@ Something bad happened!
 ```javascript
 var template = new Brightline(templateString);
 template.set('name','Eli Manning');
-template.render(); // Returns: Eli Manning is a quarterback 
+template.render();
+```
+###### Result:
+
+```html
+Eli Manning is a quarterback 
 ```
 ---
 #### If a variable is set in a child block, or a child block is touched, then the parent block is automatically parsed.
+
+Consider the following example:
 
 ```html
 <!-- BEGIN someBlock -->
@@ -585,14 +707,14 @@ template.set('photoURL','eli.jpg');
 template.render();
 ```
 
-This will return:
+###### Result:
 
 ```html
 is a quarterback
 <img src="eli.jpg" />
 ```
 
-Why?
+Uh oh. That's not right. What happened?
 
 The `photoURL` variable is in the `photo` block, which is a child of the `someBlock` block. When `photoURL` is set, the child block is automatically parsed ... which automatically parses the parent block as well.
 
@@ -616,9 +738,12 @@ The solution is simple: Wrap the rest of the content of `someBlock` in its own b
 
 When this template is rendered, the `description` block is left unparsed, since none of its variables have been set. Therefore, the result is what you'd expect:
 
+###### Result:
+
 ```html
 <img src="eli.jpg" />
 ```
+
 ---
 #### When rendering a template, Brightline respects the order of your source template's markup.
 
@@ -640,7 +765,12 @@ This is second.
 var template = new Brightline(templateString);
 template.touch('second');
 template.touch('first');
-template.render(); // Returns: This is first. This is second.
+template.render();
+```
+###### Result:
+
+```html
+This is first. This is second.
 ```
 
 ---
@@ -697,6 +827,8 @@ template.render();
 **THIS IS WRONG**. 
 
 Following the example above will give you:
+
+###### Result:
 
 ```html
 <img src="brad.jpg" />
@@ -796,76 +928,13 @@ template.render();
 
 Now you'll get what you wanted:
 
+###### Result:
+
 ```html
 <img src="brad.jpg" /> Brad Pitt
 <img src="george.jpg" /> George Clooney
 <img src="matt.jpg" /> Matt Damon
 ```
-
-
-## Why Brightline?
-
-The majority of the popular JavaScript template engines (Handlebars, Mustache, jQuery, etc.) blur the line between
-presentation and logic. Their templates are full of noise: control structures, loops, helpers, arguments, and all
-sorts of other constructs that move the logic of how to render templates into the templates themselves.
-
-*I hate this.*
-
----
-
-**First of all,** it forces the developer to essentially learn a whole new markup language in order to write and/or understand the templates. Sure, some of it is simple and self-explanatory. Most people won't be tripped up by an `{{#if}}` or an `{{#else}}` or even an `{{#each}}`.
-
-But what about a `{{#list nav id="nav-bar" class="top"}}` tag?
-
-Hmm. Not so sure about that one. Is that a feature of the templating engine? A custom helper? What does the pound symbol mean? Why are there two key=value pairs, but `nav` is all by itself? Is it lonely? Do the other pairs make fun of it because it doesn't have any friends? They probably do. Jerks.
-
-Let's check the template engine's docs for `list` or `nav`. Nope not there. 
-
-Okay, so it must be a helper. Wonder what it does ...?
-
-If I had to guess, I'd say it creates a `<nav>` element with an id of `list`, since that pound symbol means `id` in css and jQuery. 
-
-But, uh, there's also an `id="nav-bar"`, so maybe *that's* the id ...? 
-
-Damnit, better find the helper code to be sure.
-
-So you comb through the JavaScript for a while, and finally you find this:
-
-```javascript
-Template.registerHelper('list', function(context, options) {
-  var attrs = SC.keys(options.hash).map(function(key) {
-    key + '="' + options.hash[key] + '"';
-  }).join(" ");
-
-  return "<ul " + attrs + ">" + context.map(function(item) {
-    return "<li>" + options.fn(item) + "</li>";
-  }).join("\n") + "</ul>";
-});
-```
-
-Holy hell. What a nightmare. 
-
-HTML tags in the JavaScript? What is this, the 90's? 
-
-And what's `context`? What's `options`? What's `options.hash`? Or `options.fn`? 
-
-Back to the template engine docs again ...
-
----
-
-**Second**, the markup for these template engines often tightly couples the template to the structure of the object used to populate the template. This limits the reusability of your templates. 
-
-For example, if your template for an unordered list has `{{#each dogs}}`, you must pass it an object with a `dogs` property. Want to display `cats` using the same template? Sorry. You'll have to duplicate all your markup, and wrap it in `{{#each cats}}`.
-
-Tightly coupling the template to the object structure also makes the templates more brittle. If the object changes -- say, `dogs` changes to `pets` -- then your templates will break.
-
----
-
-**Third**, most of the major template engines do some sort of eval'ing under the hood. Either they use `eval()` directly, or via `new Function()`. Not only is this a security risk, but it means that the template engines are completely unusable in contexts where the Content-Security-Policy disallows eval.
-
-I found this out the hard way when I implemented Handlebars in [StayFocusd](https://chrome.google.com/webstore/detail/laankejkbhbdhmipfmgcngdelahlfoji), my Google Chrome extension. Chrome recently made their Content-Security-Policy extremely strict, disallowing `eval()` in every possible way. Unfortunately, this also made every templating library I could find completely unusable. 
-
-So I wrote my own.
 
 # Questions? Bugs? Suggestions?
 
