@@ -108,6 +108,7 @@ Blocks can also be nested:
 </ul>
 ```
 
+
 ## API
 
 All of Brightline's power is derived from a handful of simple methods that can be combined in some very powerful ways.
@@ -488,11 +489,240 @@ console.error(logMessage);
 // Error code: 100.1234
 ```
 
-## Best practices
+## Understanding rendering
 
+#### Unused variables are replaced with empty strings when the template is rendered.
 
+Notice in the example below that `{{adjective}}` is not set, and is therefore not in the rendered template.
 
-## Examples
+```html
+{{name}} is a {{adjective}} quarterback.
+```
+
+```javascript
+var template = new Brightline(templateString);
+template.set('name','Eli Manning');
+template.render(); // Returns: Eli Manning is a quarterback 
+```
+---
+#### If a variable in a block is set, the block is automatically parsed.
+
+Even though `someBlock` is not explicitly parsed using `parse()`, it is still in the rendered template because `{{name}}` has been set.
+
+```html
+<!-- BEGIN someBlock -->
+{{name}} is a {{adjective}} quarterback.
+<!-- END someBlock -->
+```
+
+```javascript
+var template = new Brightline(templateString);
+template.set('name','Eli Manning');
+template.render(); // Returns: Eli Manning is a quarterback 
+```
+---
+#### If a block doesn't have any variables set, it will not be parsed unless it is touched with `touch()`
+
+Notice that the `error` block does not appear in the rendered template. If we *did* want it to appear, we'd have to call `template.touch('error');`
+
+```html
+<!-- BEGIN someBlock -->
+{{name}} is a {{adjective}} quarterback.
+<!-- END someBlock -->
+
+<!-- BEGIN error -->
+Something bad happened!
+<!-- END error -->
+```
+
+```javascript
+var template = new Brightline(templateString);
+template.set('name','Eli Manning');
+template.render(); // Returns: Eli Manning is a quarterback 
+```
+---
+#### When rendering a template, Brightline respects the order of your source template's markup.
+
+In other words, the order in which you call Brightline methods does not affect the order in which the elements appear in the rendered template.
+
+Notice in the example below that, even though the `second` block is touched before the `first` block, the `first` block still appears before the `second` block in the rendered template.
+
+```html
+<!-- BEGIN first -->
+This is first. 
+<!-- END first -->
+
+<!-- BEGIN second -->
+This is second. 
+<!-- END second -->
+```
+
+```javascript
+var template = new Brightline(templateString);
+template.touch('second');
+template.touch('first');
+template.render(); // Returns: This is first. This is second.
+```
+
+---
+
+#### Each block maintains its own render stack.
+
+Each time you touch or parse a block, it is added to the block's render stack. When the template is rendered, the block is replaced with everything from its render stack.
+
+If you're not careful, you can end up with unexpected results. 
+
+For example, suppose you want to loop through some actors and output each with a photo and a name. You might try something like this:
+
+```html
+<!-- BEGIN photo -->
+<img src="{{photoURL}}" />
+<!-- END photo -->
+
+<!-- BEGIN name -->
+{{name}}
+<!-- END name -->
+```
+
+```javascript
+var template = new Brightline(templateString);
+
+var actors = [
+    
+    {
+        name : 'Brad Pitt',
+        photoURL : 'brad.jpg'
+    },
+    {
+        name : 'George Clooney',
+        photoURL : 'george.jpg'
+    },
+    {
+        name : 'Matt Damon',
+        photoURL : 'matt.jpg'
+    }
+];
+
+for (var i=0;i<actors.length;i++){
+    
+    template.set('photoURL',actors[i].photoURL);
+    template.parse('photo');
+    
+    template.set('name',actors[i].name);
+    template.parse('name');
+}
+
+template.render();
+```
+
+**THIS IS WRONG**. 
+
+Following the example above will give you:
+
+```html
+<img src="brad.jpg" />
+<img src="george.jpg" />
+<img src="matt.jpg" />
+Brad Pitt
+George Clooney
+Matt Damon
+```
+
+Why? 
+
+When Brightline parses your template, it converts each block into a placeholder:
+
+```html
+{{__photo__}}
+
+{{__name__}}
+```
+
+It then creates a TemplateBlock object for each block, which maintains the rendered content for that block. When you call `parse()` or `touch()`, the parsed/touched block is pushed onto the rendered content stack for that block.
+
+This is a simplified example, but it basically happens like this:
+
+```javascript
+var photo = ['<img src="brad.jpg" />','<img src="george.jpg" />','<img src="matt.jpg" />'];
+var name = ['Brad Pitt','George Clooney','Matt Damon'];
+```
+
+Then, when then whole template is rendered, the block placeholder is replaced with the stack of rendered content for that block.
+
+`{{__photo__}}` is replaced with `['<img src="brad.jpg" />','<img src="george.jpg" />','<img src="matt.jpg" />'].join()`.
+
+`{{_name__}}` is replaced with `['Brad Pitt','George Clooney','Matt Damon'].join()`.
+
+So the end result is:
+
+```html
+<img src="brad.jpg" />
+<img src="george.jpg" />
+<img src="matt.jpg" />
+Brad Pitt
+George Clooney
+Matt Damon
+```
+
+Alright, then what's the **RIGHT** way to do it?
+
+Simple: Just wrap the `photo` and `name` blocks in a parent block, then parse that.
+
+```html
+<!-- BEGIN actor -->
+
+    <!-- BEGIN photo -->
+    <img src="{{photoURL}}" />
+    <!-- END photo -->
+    
+    <!-- BEGIN name -->
+    {{name}}
+    <!-- END name -->
+    
+<!-- END actor -->
+```
+
+```javascript
+var template = new Brightline(templateString);
+
+var actors = [
+    
+    {
+        name : 'Brad Pitt',
+        photoURL : 'brad.jpg'
+    },
+    {
+        name : 'George Clooney',
+        photoURL : 'george.jpg'
+    },
+    {
+        name : 'Matt Damon',
+        photoURL : 'matt.jpg'
+    }
+];
+
+for (var i=0;i<actors.length;i++){
+    
+    template.set('photoURL',actors[i].photoURL);
+    template.parse('photo');
+    
+    template.set('name',actors[i].name);
+    template.parse('name');
+    
+    template.parse('actor'); // This is the key to making it work the way you want
+}
+
+template.render();
+```
+
+Now you'll get what you wanted:
+
+```html
+<img src="brad.jpg" /> Brad Pitt
+<img src="george.jpg" /> George Clooney
+<img src="matt.jpg" /> Matt Damon
+```
+
 
 ## Why Brightline?
 
