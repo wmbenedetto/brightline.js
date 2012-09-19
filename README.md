@@ -963,8 +963,8 @@ Now you'll get what you wanted:
 
 In the `examples` directory, you'll find an index.html file. Open it in a browser to see the rendered template. View the source to see how it was done. 
 
-* Brightline.js is included at the top of the page
-* There's an inline template wrapped in an `x-brightline-template` script tag
+* Brightline.js is included at the top of the page.
+* There's an inline template wrapped in an `x-brightline-template` script tag.
 * The JavaScript at the bottom of the page uses every available Brightline API.
 * Open the browser console and you'll see debug logging that shows you what Brightline is doing under the hood as it renders the template.
 
