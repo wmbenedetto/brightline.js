@@ -133,7 +133,7 @@ Brightline templates are incredibly, delightfully simple. There are only two mai
 
 ### Variables
 
-Variables are expressed using familiar Mustache-style formatting, like `{{variableName}}`:
+A *variable* is expressed using familiar Mustache-style formatting, like `{{variableName}}`:
 
 ```html
 <p>{{name}} is a great actor.</p>
@@ -148,6 +148,8 @@ Variables can also use dot-notation to reference values in a nested object:
 Variables are replaced with values using the `set()` method, as described in the [API](#setkeyvalue-or-setcontentobj) docs below.
 
 ### Blocks
+
+A *block* is a snippet of the template that can be manipulated by Brightline. 
 
 Blocks are expressed using HTML comments that surround the block:
 
@@ -173,6 +175,16 @@ Blocks can also be nested:
     <!-- END item -->
 </ul>
 ```
+
+By default, blocks are not rendered. If the example above was rendered as-is, it would simply output `<ul></ul>`. It's as if the code in the `item` block doesn't exist at all.
+
+A block is rendered when either A.) one or more variables in it is replaced or B.) when it is explicitly touched using the `touch()` method. 
+
+For example, if we were to replace `{{name}}`, then the `item` block would be rendered ... but the `photo` block would not, since we haven't done anything with `{{photoURL}}` yet.
+
+Blocks can also be used to limit the scope of a template variable. For example, say you have a template with a `{{name}}` variable in multiple places, but you only want to replace one of them. By wrapping each `{{name}}` variable in its own unique block, you can use the `setScope()` method in conjunction with `set()` to only replace the variable in one block and not the others.
+
+For more information on working with blocks, check out the [parse()](#parseblockname), [render()](#renderblockname), [snip()](#snipblockname), and [touch()](#touchblockname) APIs, as well as the [Understanding Rendering](#understanding-rendering) section below.
 
 ## Loading templates
 
@@ -310,7 +322,7 @@ Brad is married to Angelina. Brad loves Angelina very much.
 ##### set(*contentObj*)
 
 ```html
-{{man}} is married to {{woman}}. {{man}} loves {{woman}} very much.
+{{man}} is married to {{woman}}. {{man}} loves {{woman}} very much. They live in {{home.city}}, {{home.state}}.
 ```
 
 ```javascript
@@ -318,14 +330,18 @@ var template = new Brightline(templateString);
 
 template.set({
     man     : 'Brad',
-    woman   : 'Angelina'
+    woman   : 'Angelina',
+    home : {
+        city : 'Los Angeles',
+        state : 'CA'
+    }
 });
 ```
 
 ###### Result:
 
 ```html
-Brad is married to Angelina. Brad loves Angelina very much.
+Brad is married to Angelina. Brad loves Angelina very much. They live in Los Angeles, CA.
 ```
 
 ---
@@ -525,7 +541,9 @@ var html = template.render();
 Brad is married to Angelina. Brad loves Angelina very much.
 ```
 
-The `render()` method can also be used to render individual blocks from a template:
+The `render()` method can also be used to render individual blocks from a template.
+
+For example, imagine you have all your buttons in one template file, so they can be re-used in many pages:
 
 ```html
 <!-- BEGIN continue -->;
@@ -538,7 +556,6 @@ The `render()` method can also be used to render individual blocks from a templa
 ```
 
 ```javascript
-// Imagine you have all your buttons in one template file, so they can be re-used in many pages
 var template = new Brightline(templateString);
 
 template.setScope('continue');
@@ -552,12 +569,13 @@ template.set('altText','Buy Now');
 var buyButton = template.render('buy');
 ```
 
+Now imagine you have a separate template for a shopping cart page that uses some buttons:
+
 ```html
 {{buyButton}} {{continueButton}}
 ```
 
 ```javascript
-// Now imagine you have a shopping cart page that uses some buttons
 var template2 = new Brightline(templateString2);
 template2.set('buyButton',buyButton);
 template2.set('continueButton',continueButton);
@@ -640,6 +658,9 @@ template.render();
 ```html
 Eli Manning is a quarterback 
 ```
+
+Note that the `{{adjective}}` variable is gone from the the result. It has been replaced with an empty string.
+
 ---
 #### If a variable in a block is set, the block is automatically parsed.
 
@@ -720,9 +741,9 @@ Uh oh. That's not right. What happened?
 
 The `photoURL` variable is in the `photo` block, which is a child of the `someBlock` block. When `photoURL` is set, the child block is automatically parsed ... which automatically parses the parent block as well.
 
-We haven't set any values for `name` or `adjective`, so those variables are replaced with empty strings. However, the rest of the test from that sentence is still rendered.
+We haven't set any values for `name` or `adjective`, so those variables are replaced with empty strings. However, the rest of the text from that sentence is still rendered.
 
-The solution is simple: Wrap the rest of the content of `someBlock` in its own block:
+So, how do we prevent the rest of the text from being rendered? Simple: Wrap the sentence containing `{{name}}` and `{{adjective}}` in their own block. Let's call it `description`.
 
 ```html
 <!-- BEGIN someBlock -->
@@ -879,7 +900,7 @@ Matt Damon
 
 Alright, then what's the **RIGHT** way to do it?
 
-Simple: Just wrap the `photo` and `name` blocks in a parent block, then parse that.
+Simple: Just wrap the `photo` and `name` blocks in a parent block, then parse that. Let's name the parent block `actor`.
 
 ```html
 <!-- BEGIN actor -->
