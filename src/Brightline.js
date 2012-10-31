@@ -1,3 +1,4 @@
+/*! Brightline.js | MIT License | https://github.com/wmbenedetto/brightline.js#mit-license */
 /**
  *     ____  ____  ____________  __________    _____   ________     _______
  *    / __ )/ __ \/  _/ ____/ / / /_  __/ /   /  _/ | / / ____/    / / ___/
