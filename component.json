@@ -1,5 +1,5 @@
 {
-	"name" : "brightline.js"
-	"version" : "0.2.0"
+	"name" : "brightline.js",
+	"version" : "0.2.0",
 	"main" : "./src/Brightline.min.js"
 }
