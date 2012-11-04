@@ -273,6 +273,8 @@ You can optionally pass an object containing configuration options:
 * *name*: Plain-English name of the template. This is used in debug logging, to distinguish between log messages coming from multiple Brightline instances. 
 * *logLevel*: String containing the level of logging to output to the console (OFF, ERROR, WARN, INFO, DEBUG)
 
+**NOTE:** Logging is disabled in the minified version of Brightline.
+
 ```html
 <div>{{name}}</div>
 ```
