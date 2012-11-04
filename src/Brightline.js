@@ -1,4 +1,8 @@
-/*! Brightline.js | MIT License | https://github.com/wmbenedetto/brightline.js#mit-license */
+/** @license Brightline.js | MIT License | https://github.com/wmbenedetto/brightline.js#mit-license */
+if (typeof MINIFIED === 'undefined'){
+    MINIFIED = false;
+}
+
 /**
  *     ____  ____  ____________  __________    _____   ________     _______
  *    / __ )/ __ \/  _/ ____/ / / /_  __/ /   /  _/ | / / ____/    / / ___/
@@ -30,67 +34,70 @@
  */
 (function(window,undefined) {
 
-    var logLevels = {
-        OFF                                     : 0,
-        ERROR                                   : 1,
-        WARN                                    : 2,
-        INFO                                    : 3,
-        DEBUG                                   : 4
-    };
+    if (!MINIFIED){
 
-    var logLevel                                = 'OFF';
-    var console                                 = window.console || {};
+        var logLevels = {
+            OFF                                     : 0,
+            ERROR                                   : 1,
+            WARN                                    : 2,
+            INFO                                    : 3,
+            DEBUG                                   : 4
+        };
 
-    console.log                                 = (typeof console.log   === 'function') ? console.log   : function() {};
-    console.info                                = (typeof console.info  === 'function') ? console.info  : console.log;
-    console.error                               = (typeof console.error === 'function') ? console.error : console.log;
-    console.warn                                = (typeof console.warn  === 'function') ? console.warn  : console.log;
+        var logLevel                                = 'OFF';
+        var console                                 = window.console || {};
 
-    /**
-     * Default log() implementation
-     *
-     * This can be overridden by defining a log() function in the initObj
-     * passed to the constructor
-     *
-     * @param funcName The name of the function generating the log message
-     * @param message The message to log
-     * @param payload Data object
-     * @param level Log level (ERROR, WARN, INFO, DEBUG)
-     */
-    var log = function(funcName,message,payload,level) {
+        console.log                                 = (typeof console.log   === 'function') ? console.log   : function() {};
+        console.info                                = (typeof console.info  === 'function') ? console.info  : console.log;
+        console.error                               = (typeof console.error === 'function') ? console.error : console.log;
+        console.warn                                = (typeof console.warn  === 'function') ? console.warn  : console.log;
 
-        payload                                 = (!payload) ? '' : payload;
-        level                                   = (!level) ? 'INFO' : level.toUpperCase();
-        message                                 = '[' + funcName + '()] ' + message;
+        /**
+         * Default log() implementation
+         *
+         * This can be overridden by defining a log() function in the initObj
+         * passed to the constructor
+         *
+         * @param funcName The name of the function generating the log message
+         * @param message The message to log
+         * @param payload Data object
+         * @param level Log level (ERROR, WARN, INFO, DEBUG)
+         */
+        var log = function(funcName,message,payload,level) {
 
-        if (isLoggable(level)) {
+            payload                                 = (!payload) ? '' : payload;
+            level                                   = (!level) ? 'INFO' : level.toUpperCase();
+            message                                 = '[' + funcName + '()] ' + message;
 
-            if (level === 'ERROR') {
-                console.error(message,payload);
-            } else if (level === 'WARN') {
-                console.warn(message,payload);
-            } else if (level === 'INFO') {
-                console.info(message,payload);
-            } else {
-                console.log(message,payload);
+            if (isLoggable(level)) {
+
+                if (level === 'ERROR') {
+                    console.error(message,payload);
+                } else if (level === 'WARN') {
+                    console.warn(message,payload);
+                } else if (level === 'INFO') {
+                    console.info(message,payload);
+                } else {
+                    console.log(message,payload);
+                }
             }
-        }
-    };
+        };
 
-    /**
-     * Checks whether the given level is loggable based on the
-     * current log level
-     *
-     * @param level The level to check
-     * @return {Boolean}
-     */
-    var isLoggable = function(level){
+        /**
+         * Checks whether the given level is loggable based on the
+         * current log level
+         *
+         * @param level The level to check
+         * @return {Boolean}
+         */
+        var isLoggable = function(level){
 
-        var currentLogLevel                     = logLevels[logLevel];
-        var thisLogLevel                        = logLevels[level];
+            var currentLogLevel                     = logLevels[logLevel];
+            var thisLogLevel                        = logLevels[level];
 
-        return thisLogLevel <= currentLogLevel;
-    };
+            return thisLogLevel <= currentLogLevel;
+        };
+    }
 
     /**
      * Determines whether a variable is empty
@@ -348,7 +355,10 @@
          * @param level Log level (ERROR, WARN, INFO, DEBUG)
          */
         log : function(funcName,message,payload,level){
-            log('Tree.'+funcName,message,payload,level);
+
+            if (!MINIFIED){
+                log('Tree.'+funcName,message,payload,level);
+            }
         },
 
         /**
@@ -528,12 +538,15 @@
                 throw new Error('[Tree.addChildren()] Children added to Tree must in an array');
             }
 
-            this.log('addChildren', 'Adding children',{
+            if (!MINIFIED){
 
-                parent                          : parent,
-                children                        : children
+                this.log('addChildren', 'Adding children',{
 
-            },'DEBUG');
+                    parent                          : parent,
+                    children                        : children
+
+                },'DEBUG');
+            }
 
             for (var i=0;i<children.length;i++){
                 this.addChild(parent,children[i]);
@@ -612,12 +625,15 @@
                 throw new Error('[Tree.removeChild()] Cannot remove child. This node is not a child of the given parent.');
             }
 
-            this.log('removeChild', 'Removing child',{
+            if (!MINIFIED){
 
-                parent                          : parent,
-                child                           : child
+                this.log('removeChild', 'Removing child',{
 
-            },'DEBUG');
+                    parent                          : parent,
+                    child                           : child
+
+                },'DEBUG');
+            }
 
             var parentNodeID                    = this.getNodeID(parent);
             var childNodeID                     = this.getNodeID(child);
@@ -672,12 +688,15 @@
                 children                        = this.getChildren(parent);
             }
 
-            this.log('removeChildren', 'Removing children',{
+            if (!MINIFIED){
 
-                parent                          : parent,
-                children                        : children
+                this.log('removeChildren', 'Removing children',{
 
-            },'DEBUG');
+                    parent                          : parent,
+                    children                        : children
+
+                },'DEBUG');
+            }
 
             for (var i in children){
 
@@ -718,7 +737,9 @@
                 throw new Error('[Tree.addParent()] Parent\'s node id must be unique.');
             }
 
-            this.log('addParent', 'Adding parent',parent,'DEBUG');
+            if (!MINIFIED){
+                this.log('addParent', 'Adding parent',parent,'DEBUG');
+            }
 
             this.addNode(parent,parentNodeID);
 
@@ -803,7 +824,9 @@
 
             var nodeID                          = this.getNodeID(node);
 
-            this.log('remove', 'Removing node',node,'DEBUG');
+            if (!MINIFIED){
+                this.log('remove', 'Removing node',node,'DEBUG');
+            }
 
             if (this.hasParent(nodeID)){
 
@@ -841,7 +864,9 @@
             this.name                           = options.name || null;
         }
 
-        this.log('constructor', 'Creating new Brightline template', options);
+        if (!MINIFIED){
+            this.log('constructor', 'Creating new Brightline template', options);
+        }
 
         if (typeof templateString === 'string'){
             this.process(templateString);
@@ -904,9 +929,12 @@
          */
         log : function(funcName,message,payload,level){
 
-            funcName                            = (this.name) ? this.name+': Brightline.'+funcName : 'Brightline.'+funcName;
+            if (!MINIFIED){
 
-            log(funcName,message,payload,level);
+                funcName                        = (this.name) ? this.name+': Brightline.'+funcName : 'Brightline.'+funcName;
+
+                log(funcName,message,payload,level);
+            }
         },
 
         /**
@@ -952,7 +980,9 @@
                 value                       = args[1];
                 ignoreScope                 = args[2];
 
-                this.log('set', 'Setting "'+input+'" to ', value);
+                if (!MINIFIED){
+                    this.log('set', 'Setting "'+input+'" to ', value);
+                }
 
                 if (typeof value === 'function'){
 
@@ -1021,7 +1051,9 @@
                 throw new Error('['+this.name+' Brightline.setScope()] Cannot set scope to non-existent block: '+blockName);
             }
 
-            this.log('setScope', 'Setting scope to '+blockName);
+            if (!MINIFIED){
+                this.log('setScope', 'Setting scope to '+blockName);
+            }
 
             this.currentScope               = this.getBlock(blockName);
 
@@ -1039,7 +1071,9 @@
          */
         clearScope : function(resetScope){
 
-            this.log('clearScope', 'Clearing scope');
+            if (!MINIFIED){
+                this.log('clearScope', 'Clearing scope');
+            }
 
             resetScope                      = (typeof resetScope === 'undefined') ? true : resetScope;
 
@@ -1095,7 +1129,9 @@
 
             templateBlock.touch();
 
-            this.log('touch', 'Touching block: '+blockName, templateBlock.getTouched());
+            if (!MINIFIED){
+                this.log('touch', 'Touching block: '+blockName, templateBlock.getTouched());
+            }
 
             return this;
         },
@@ -1142,7 +1178,9 @@
          */
         parse : function(blockName,touchBlock){
 
-            this.log('parse', 'Parsing block: '+blockName);
+            if (!MINIFIED){
+                this.log('parse', 'Parsing block: '+blockName);
+            }
 
             blockName                       = (typeof blockName === 'undefined') ? '__root__' : blockName;
             touchBlock                      = (typeof touchBlock === 'undefined') ? true : touchBlock;
@@ -1180,7 +1218,9 @@
 
             blockName                       = (typeof blockName === 'undefined') ? '__root__' : blockName;
 
-            this.log('render', 'Rendering '+blockName);
+            if (!MINIFIED){
+                this.log('render', 'Rendering '+blockName);
+            }
 
             var templateBlock               = this.parse(blockName);
             var templateString              = trim(templateBlock.getParsedContent().join("\n"));
@@ -1202,7 +1242,9 @@
          */
         snip : function(blockName){
 
-            this.log('snip', 'Snipping block: '+blockName);
+            if (!MINIFIED){
+                this.log('snip', 'Snipping block: '+blockName);
+            }
 
             blockName                       = (typeof blockName === 'undefined') ? '__root__' : blockName;
 
@@ -1254,12 +1296,15 @@
 
             var flattenedObj                = flattenObj(obj);
 
-            this.log('setObject', 'Setting object vars', {
+            if (!MINIFIED){
 
-                originalObj                 : obj,
-                flattenedObj                : flattenedObj
+                this.log('setObject', 'Setting object vars', {
 
-            }, 'DEBUG');
+                    originalObj                 : obj,
+                    flattenedObj                : flattenedObj
+
+                }, 'DEBUG');
+            }
 
             for (var i in flattenedObj){
 
@@ -1302,7 +1347,9 @@
          */
         process : function(templateString){
 
-            this.log('process', 'Processing template string', { templateString : templateString } , 'DEBUG');
+            if (!MINIFIED){
+                this.log('process', 'Processing template string', { templateString : templateString } , 'DEBUG');
+            }
 
             var rootBlock                   = new TemplateBlock('__root__');
             rootBlock.setContent(templateString);
@@ -1336,7 +1383,9 @@
 
             if (foundBlocks){
 
-                this.log('findBlocks', 'Found blocks in '+parentBlock.getName(), foundBlocks , 'DEBUG');
+                if (!MINIFIED){
+                    this.log('findBlocks', 'Found blocks in '+parentBlock.getName(), foundBlocks , 'DEBUG');
+                }
 
                 for (var i=0;i<foundBlocks.length;i++){
 
@@ -1379,7 +1428,9 @@
 
             if (this.blocks.hasChildren(templateBlock)){
 
-                this.log('insertChildBlockPlaceholders', 'Inserting child block placeholders in '+templateBlock.getName(), templateBlock , 'DEBUG');
+                if (!MINIFIED){
+                    this.log('insertChildBlockPlaceholders', 'Inserting child block placeholders in '+templateBlock.getName(), templateBlock , 'DEBUG');
+                }
 
                 var childBlocks             = this.blocks.getChildren(templateBlock);
                 var self                    = this;
@@ -1397,7 +1448,9 @@
 
                             if (matches){
 
-                                self.log('insertChildBlockPlaceholders', ' --> Inserting placeholder for '+childBlockName, null , 'DEBUG');
+                                if (!MINIFIED){
+                                    self.log('insertChildBlockPlaceholders', ' --> Inserting placeholder for '+childBlockName, null , 'DEBUG');
+                                }
 
                                 templateBlock.setContent(parentBlockContent.replace(matches[0],'{{__'+childBlockName+'__}}'));
                             }
@@ -1423,12 +1476,15 @@
 
             if (foundVariables){
 
-                this.log('findVariablesInBlockContent', 'Found variables in '+templateBlock.getName(), {
+                if (!MINIFIED){
 
-                    templateBlock           : templateBlock,
-                    foundVariables          : foundVariables
+                    this.log('findVariablesInBlockContent', 'Found variables in '+templateBlock.getName(), {
 
-                }, 'DEBUG');
+                        templateBlock           : templateBlock,
+                        foundVariables          : foundVariables
+
+                    }, 'DEBUG');
+                }
 
                 for (var i=0;i<foundVariables.length;i++){
 
@@ -1452,7 +1508,9 @@
          */
         parseBlock : function(templateBlock){
 
-            this.log('parseBlock', 'Parsing '+templateBlock.getName(), templateBlock , 'DEBUG');
+            if (!MINIFIED){
+                this.log('parseBlock', 'Parsing '+templateBlock.getName(), templateBlock , 'DEBUG');
+            }
 
             var childBlocks                 = this.blocks.getChildren(templateBlock);
 
@@ -1488,7 +1546,9 @@
 
             if (blockVariables.length > 0){
 
-                this.log('replaceBlockVariables', 'Replacing block variables in '+templateBlock.getName(), templateBlock , 'DEBUG');
+                if (!MINIFIED){
+                    this.log('replaceBlockVariables', 'Replacing block variables in '+templateBlock.getName(), templateBlock , 'DEBUG');
+                }
 
                 for (var i=0;i<blockVariables.length;i++){
 
@@ -1501,7 +1561,9 @@
 
                             blockContent    = blockContent.replace(placeholder,blockVariableCache[variableName]);
 
-                            this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+templateBlock.variableCache[variableName]+'" from template block', null , 'DEBUG');
+                            if (!MINIFIED){
+                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+templateBlock.variableCache[variableName]+'" from template block', null , 'DEBUG');
+                            }
 
                             templateBlock.setUsedVariable(variableName,true);
                             templateBlock.touched       = 1;
@@ -1510,21 +1572,27 @@
 
                             blockContent    = blockContent.replace(placeholder,this.variableCache[variableName]);
 
-                            this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+this.variableCache[variableName]+'" from variable cache', null , 'DEBUG');
+                            if (!MINIFIED){
+                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+this.variableCache[variableName]+'" from variable cache', null , 'DEBUG');
+                            }
 
                             this.usedVariables[variableName] = true;
                             templateBlock.touched       = 1;
 
                         } else {
 
-                            this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with empty string', null , 'DEBUG');
+                            if (!MINIFIED){
+                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with empty string', null , 'DEBUG');
+                            }
 
                             blockContent    = blockContent.replace(placeholder,'');
                         }
 
                     } else {
 
-                        this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with empty string', null , 'DEBUG');
+                        if (!MINIFIED){
+                            this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with empty string', null , 'DEBUG');
+                        }
 
                         blockContent        = blockContent.replace(placeholder,'');
                     }
@@ -1550,7 +1618,9 @@
 
             if (!isEmpty(childBlocks)){
 
-                this.log('replaceChildBlockPlaceholders', 'Replacing child block placeholders in '+templateBlock.getName(), { parsedContent : parsedContent } , 'DEBUG');
+                if (!MINIFIED){
+                    this.log('replaceChildBlockPlaceholders', 'Replacing child block placeholders in '+templateBlock.getName(), { parsedContent : parsedContent } , 'DEBUG');
+                }
 
                 for (var i in childBlocks){
 
@@ -1563,7 +1633,9 @@
 
                             if (parsedContent.hasOwnProperty(j) && parsedContent[j].indexOf(placeholder) > -1){
 
-                                this.log('replaceChildBlockPlaceholders', ' --> Replacing child block '+placeholder, { replacement : replacement } , 'DEBUG');
+                                if (!MINIFIED){
+                                    this.log('replaceChildBlockPlaceholders', ' --> Replacing child block '+placeholder, { replacement : replacement } , 'DEBUG');
+                                }
 
                                 parsedContent[j]        = parsedContent[j].replace(placeholder,replacement);
                             }
@@ -1606,7 +1678,9 @@
                 }
             }
 
-            this.log('getParsedContent', 'Getting parsed content for '+templateBlock.getName(), { parsedContent : templateBlock.parsedContent } , 'DEBUG');
+            if (!MINIFIED){
+                this.log('getParsedContent', 'Getting parsed content for '+templateBlock.getName(), { parsedContent : templateBlock.parsedContent } , 'DEBUG');
+            }
 
             return templateBlock.getParsedContent();
         },
@@ -1616,7 +1690,9 @@
          */
         clearUsedVariablesFromCache : function(){
 
-            this.log('clearUsedVariablesFromCache', 'Clearing used variables from cache', this.usedVariables , 'DEBUG');
+            if (!MINIFIED){
+                this.log('clearUsedVariablesFromCache', 'Clearing used variables from cache', this.usedVariables , 'DEBUG');
+            }
 
             for (var varName in this.usedVariables){
 
