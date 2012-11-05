@@ -1723,6 +1723,17 @@ if (typeof MINIFIED === 'undefined'){
         }
     };
 
-    window.Brightline = Brightline;
+    /* If RequireJS define() is present, use it to export Brightline */
+    if (typeof define === "function") {
+
+        define(function() {
+            return Brightline;
+        });
+    }
+    /* Otherwise, add Brightline to global namespace */
+    else {
+
+        window.Brightline = Brightline;
+    }
 
 }(window));
