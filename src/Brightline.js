@@ -257,6 +257,12 @@ if (typeof MINIFIED === 'undefined'){
         variableCache                           : null,
         usedVariables                           : null,
 
+        reset : function(){
+            this.parsedContent                  = [];
+            this.usedVariables                  = {};
+            this.touched                        = 0;
+        },
+
         isAlreadyParsed : function(varName){
             return varName in this.usedVariables;
         },
@@ -1226,6 +1232,7 @@ if (typeof MINIFIED === 'undefined'){
             var templateString              = trim(templateBlock.getParsedContent().join("\n"));
 
             this.clearScope();
+            templateBlock.reset();
 
             return templateString;
         },
