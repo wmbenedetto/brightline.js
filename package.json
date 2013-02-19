@@ -1,6 +1,6 @@
 {
     "name"                      : "brightline.js",
-    "version"                   : "0.3.1",
+    "version"                   : "0.3.2",
     "description"               : "Brightline.js is a JavaScript template engine for people who demand a clean separation (a bright line) between presentation and logic.",
     "keywords"                  : ["template", "templating","handlebars","mustache","template","html","tpl","brightline"],
     "categories"                : ["Templating"],
