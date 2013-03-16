@@ -127,20 +127,6 @@ template.render();
 <div>Brad Pitt</div>
 ```
 
-## Examples
-
-To view a live example, visit http://demos.wmbenedetto.com/brightline.js/examples
-
-View the source to see how it was done. 
-
-* Brightline.js is included at the top of the page.
-* There's an inline template wrapped in an `x-brightline-template` script tag.
-* The JavaScript at the bottom of the page uses every available Brightline API.
-* Open the browser console and you'll see debug logging that shows you what Brightline is doing under the hood as it renders the template.
-
-Alternately, clone this repo and look at the `examples` directory. You'll find an index.html file. Open it in a browser to see the rendered template.
-
-
 ## Template syntax
 
 Brightline templates are incredibly, delightfully simple. There are only two main concepts: *variables* and *blocks*. That's it.
@@ -251,6 +237,19 @@ Another way to load templates is to fetch them as html files off a server, via A
 ### HTML5 
 
 If you're building a browser extension or some other app that is designed to run on the local file system, you may be able to use the HTML5 File API to load your templates from disk. [HTML5 Rocks](http://www.html5rocks.com/en/tutorials/file/dndfiles/) has a good tutorial to get you started.
+
+## Examples
+
+To view a live example, visit http://demos.wmbenedetto.com/brightline.js/examples
+
+View the source to see how it was done. 
+
+* Brightline.js is included at the top of the page.
+* There's an inline template wrapped in an `x-brightline-template` script tag.
+* The JavaScript at the bottom of the page uses every available Brightline API.
+* Open the browser console and you'll see debug logging that shows you what Brightline is doing under the hood as it renders the template.
+
+Alternately, clone this repo and look at the `examples` directory. You'll find an index.html file. Open it in a browser to see the rendered template.
 
 ## API
 
