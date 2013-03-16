@@ -84,6 +84,29 @@ By keeping *all* template logic in your JavaScript, there are no surprises. You 
 
 Because the template logic is in your JavaScript code, there's no need for Brightline to use `eval()` or `new Function()` to render templates. That means you can use Brightline even under strict Content-Security-Policy settings.
 
+
+## Quick install
+
+Brightline.js is available via a number of popular package managers:
+
+###NPM
+
+```
+npm install brightline.js
+```
+
+###JamJS
+```
+jam install brightline.js
+```
+
+###Bower
+```
+bower install brightline.js
+```
+
+Or you can download the latest tag from https://github.com/wmbenedetto/brightline.js/tags
+
 ## Quick start
 
 This is the simplest possible use of Brightline:
