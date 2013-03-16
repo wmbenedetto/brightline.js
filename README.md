@@ -127,6 +127,20 @@ template.render();
 <div>Brad Pitt</div>
 ```
 
+## Examples
+
+To view a live example, visit http://demos.wmbenedetto.com/brightline.js/examples
+
+View the source to see how it was done. 
+
+* Brightline.js is included at the top of the page.
+* There's an inline template wrapped in an `x-brightline-template` script tag.
+* The JavaScript at the bottom of the page uses every available Brightline API.
+* Open the browser console and you'll see debug logging that shows you what Brightline is doing under the hood as it renders the template.
+
+Alternately, clone this repo and look at the `examples` directory. You'll find an index.html file. Open it in a browser to see the rendered template.
+
+
 ## Template syntax
 
 Brightline templates are incredibly, delightfully simple. There are only two main concepts: *variables* and *blocks*. That's it.
@@ -960,15 +974,6 @@ Now you'll get what you wanted:
 <img src="george.jpg" /> George Clooney
 <img src="matt.jpg" /> Matt Damon
 ```
-
-## Examples
-
-In the `examples` directory, you'll find an index.html file. Open it in a browser to see the rendered template. View the source to see how it was done. 
-
-* Brightline.js is included at the top of the page.
-* There's an inline template wrapped in an `x-brightline-template` script tag.
-* The JavaScript at the bottom of the page uses every available Brightline API.
-* Open the browser console and you'll see debug logging that shows you what Brightline is doing under the hood as it renders the template.
 
 ## Questions? Bugs? Suggestions?
 
