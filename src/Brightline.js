@@ -122,34 +122,6 @@ if (typeof MINIFIED === 'undefined'){
     };
 
     /**
-     * Checks whether an item is already in the source array
-     *
-     * @param item The item to check
-     * @param source The source array in which to look
-     * @return {Boolean}
-     */
-    var inArray = function(item,source) {
-
-        for (var i=0;i<source.length;i++) {
-
-            if (item === source[i]) {
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    /**
-     * Checks whether obj is an array
-     *
-     * @param obj The object to check
-     */
-    var isArray = function(obj){
-        return typeof obj === 'object' && obj !== null && typeof obj.length === 'number';
-    };
-
-    /**
      * Checks whether an object is an object literal (non-null, non-array)
      *
      * @param obj The object to check
@@ -214,14 +186,17 @@ if (typeof MINIFIED === 'undefined'){
      *
      * @see https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function/bind
      */
-    Function.prototype.bind = function(scope) {
+    if (typeof Function.prototype.bind !== 'function'){
 
-        var self                                = this;
+        Function.prototype.bind = function(scope) {
 
-        return function() {
-            return self.apply(scope,arguments);
-        }
-    };
+            var self                            = this;
+
+            return function() {
+                return self.apply(scope,arguments);
+            }
+        };
+    }
 
     /**
      * TemplateBlock class constructor
@@ -233,7 +208,7 @@ if (typeof MINIFIED === 'undefined'){
 
         this.name                                = name;
         this.content                             = '';
-        this.touched                             = 0;
+        this.touches                             = 0;
         this.variables                           = [];
         this.parsedContent                       = [];
         this.variableCache                       = {};
@@ -248,10 +223,9 @@ if (typeof MINIFIED === 'undefined'){
     TemplateBlock.prototype = {
 
         NODE_ID                                 : null,
-
         name                                    : null,
         content                                 : null,
-        touched                                 : null,
+        touches                                 : null,
         variables                               : null,
         parsedContent                           : null,
         variableCache                           : null,
@@ -260,70 +234,19 @@ if (typeof MINIFIED === 'undefined'){
         reset : function(){
             this.parsedContent                  = [];
             this.usedVariables                  = {};
-            this.touched                        = 0;
-        },
-
-        isAlreadyParsed : function(varName){
-            return varName in this.usedVariables;
-        },
-
-        getName : function(){
-            return this.name;
-        },
-
-        getParsedContent : function(){
-            return this.parsedContent;
-        },
-
-        addParsedContent : function(content){
-            this.parsedContent.push(content);
-        },
-
-        setParsedContent : function(content){
-            this.parsedContent                  = content;
-        },
-
-        getContent : function(){
-            return this.content;
-        },
-
-        setContent : function(content){
-            this.content                        = content;
-        },
-
-        setVariables : function(variables){
-            this.variables                      = variables;
-        },
-
-        getVariables : function(){
-            return this.variables;
-        },
-
-        setTouched : function(num){
-            this.touched                        = num;
+            this.touches                        = 0;
         },
 
         touch : function(){
-            this.touched                       += 1;
-        },
-
-        getTouched : function(){
-            return this.touched;
-        },
-
-        getVariableCache : function(){
-            return this.variableCache;
+            this.touches                       += 1;
         },
 
         setUsedVariable : function(key,value){
             this.usedVariables[key]             = value;
         },
 
-        /**
-         * Alias for getName()
-         */
         getNodeID : function(){
-            return this.getName();
+            return this.name;
         }
     };
 
@@ -540,7 +463,8 @@ if (typeof MINIFIED === 'undefined'){
          */
         addChildren : function(parent,children){
 
-            if (!isArray(children)){
+            /* Checks whether children is an array */
+            if (!(typeof children === 'object' && children !== null && typeof children.length === 'number')){
                 throw new Error('[Tree.addChildren()] Children added to Tree must in an array');
             }
 
@@ -865,7 +789,6 @@ if (typeof MINIFIED === 'undefined'){
         this.variableCache                      = {};
 
         if (isObjLiteral(options)){
-
             logLevel                            = options.logLevel || 'ERROR';
             this.name                           = options.name || null;
         }
@@ -991,11 +914,8 @@ if (typeof MINIFIED === 'undefined'){
                 }
 
                 if (typeof value === 'function'){
-
                     value                   = value();
-
                 } else if (typeof value === 'undefined'){
-
                     value                   = null;
                 }
 
@@ -1052,10 +972,6 @@ if (typeof MINIFIED === 'undefined'){
          * @param blockName
          */
         setScope : function(blockName){
-
-            if (!this.hasBlock(blockName)){
-                throw new Error('['+this.name+' Brightline.setScope()] Cannot set scope to non-existent block: '+blockName);
-            }
 
             if (!MINIFIED){
                 this.log('setScope', 'Setting scope to '+blockName);
@@ -1131,12 +1047,10 @@ if (typeof MINIFIED === 'undefined'){
          */
         touch : function(blockName){
 
-            var templateBlock               = this.getBlock(blockName);
-
-            templateBlock.touch();
+            this.getBlock(blockName).touch();
 
             if (!MINIFIED){
-                this.log('touch', 'Touching block: '+blockName, templateBlock.getTouched());
+                this.log('touch', 'Touching block: '+blockName);
             }
 
             return this;
@@ -1192,20 +1106,15 @@ if (typeof MINIFIED === 'undefined'){
             touchBlock                      = (typeof touchBlock === 'undefined') ? true : touchBlock;
 
             var templateBlock               = this.getBlock(blockName);
+            templateBlock.touches           = (touchBlock) ? 1 : 0;
 
-            if (touchBlock){
-                templateBlock.setTouched(1);
-            } else {
-                templateBlock.setTouched(0);
-            }
-
-            this.currentBlock               = templateBlock.getName();
+            this.currentBlock               = templateBlock.name;
 
             this.parseBlock(templateBlock);
             this.clearUsedVariablesFromCache();
             this.clearScope(false);
 
-            templateBlock.setTouched(0);
+            templateBlock.touches           = 0;
 
             this.currentBlock               = '__root__';
 
@@ -1228,8 +1137,10 @@ if (typeof MINIFIED === 'undefined'){
                 this.log('render', 'Rendering '+blockName);
             }
 
-            var templateBlock               = this.parse(blockName);
-            var templateString              = trim(templateBlock.getParsedContent().join("\n"));
+            this.parse(blockName);
+
+            var templateBlock               = this.getBlock(blockName);
+            var templateString              = trim(templateBlock.parsedContent.join("\n"));
 
             this.clearScope();
             templateBlock.reset();
@@ -1255,17 +1166,16 @@ if (typeof MINIFIED === 'undefined'){
 
             blockName                       = (typeof blockName === 'undefined') ? '__root__' : blockName;
 
-            var templateBlock               = this.parse(blockName,false);
-            var parsedContent               = templateBlock.getParsedContent();
-            var templateString              = trim(parsedContent.join("\n"));
+            this.parse(blockName,false);
+
+            var templateBlock               = this.getBlock(blockName);
+            var templateString              = trim(templateBlock.parsedContent.join("\n"));
 
             if (templateString.length === 0){
-                templateString              = templateBlock.getContent();
+                templateString              = templateBlock.content;
             }
 
-            parsedContent                   = parsedContent.slice(0, 0 - templateBlock.getTouched());
-
-            templateBlock.setParsedContent(parsedContent);
+            templateBlock.parsedContent     = templateBlock.parsedContent.slice(0, 0 - templateBlock.touches);
 
             this.clearScope();
 
@@ -1329,21 +1239,11 @@ if (typeof MINIFIED === 'undefined'){
          */
         getBlock : function(blockName){
 
-            if (!this.hasBlock(blockName)){
+            if (!this.blocks.has(blockName)){
                 throw new Error('['+this.name+' Brightline.getBlock()] Cannot get non-existent block: '+blockName);
             }
 
             return this.blocks.getChild(blockName);
-        },
-
-        /**
-         * Checks whether block exists
-         *
-         * @param blockName The name of the block to check
-         * @return {Boolean}
-         */
-        hasBlock : function(blockName){
-            return this.blocks.has(blockName);
         },
 
         /**
@@ -1359,7 +1259,7 @@ if (typeof MINIFIED === 'undefined'){
             }
 
             var rootBlock                   = new TemplateBlock('__root__');
-            rootBlock.setContent(templateString);
+            rootBlock.content               = templateString;
 
             this.findBlocks(rootBlock);
             this.insertChildBlockPlaceholders(rootBlock);
@@ -1383,27 +1283,26 @@ if (typeof MINIFIED === 'undefined'){
          */
         findBlocks : function(parentBlock){
 
-            var pattern                     = /<!--\s+BEGIN\s+([\.0-9A-Za-z:|_-]+)\s+-->([\s\S]*)<!--\s+END\s+\1\s+-->/mg;
-            var parentBlockContent          = parentBlock.getContent();
-            var foundBlocks                 = parentBlockContent.match(pattern);
+            var pattern                     = /<!--\s+BEGIN\s+([\.0-9A-Za-z:|_-]+)\s+-->([\s\S]*)<!--\s+END\s+\1\s+-->/gm;
+            var foundBlocks                 = parentBlock.content.match(pattern);
             var self                        = this;
 
             if (foundBlocks){
 
                 if (!MINIFIED){
-                    this.log('findBlocks', 'Found blocks in '+parentBlock.getName(), foundBlocks , 'DEBUG');
+                    this.log('findBlocks', 'Found blocks in '+parentBlock.name, foundBlocks , 'DEBUG');
                 }
 
                 for (var i=0;i<foundBlocks.length;i++){
 
-                    var foundBlock          = new RegExp(pattern).exec(foundBlocks[i]);
+                    var foundBlock              = new RegExp(pattern).exec(foundBlocks[i]);
 
                     if (foundBlock){
 
-                        var blockName       = foundBlock[1];
-                        var templateBlock   = new TemplateBlock(blockName);
+                        var blockName           = foundBlock[1];
+                        var templateBlock       = new TemplateBlock(blockName);
 
-                        templateBlock.setContent(foundBlock[2]);
+                        templateBlock.content   = foundBlock[2];
 
                         if (self.blocks.has(blockName)){
                             throw new Error('['+this.name+' Brightline.findBlocks()] Duplicate block name: '+blockName+'. Block names must be unique.');
@@ -1436,11 +1335,10 @@ if (typeof MINIFIED === 'undefined'){
             if (this.blocks.hasChildren(templateBlock)){
 
                 if (!MINIFIED){
-                    this.log('insertChildBlockPlaceholders', 'Inserting child block placeholders in '+templateBlock.getName(), templateBlock , 'DEBUG');
+                    this.log('insertChildBlockPlaceholders', 'Inserting child block placeholders in '+templateBlock.name, templateBlock , 'DEBUG');
                 }
 
-                var childBlocks             = this.blocks.getChildren(templateBlock);
-                var self                    = this;
+                var childBlocks                     = this.blocks.getChildren(templateBlock);
 
                 for (var i in childBlocks){
 
@@ -1448,19 +1346,8 @@ if (typeof MINIFIED === 'undefined'){
 
                         (function(childBlock){
 
-                            var childBlockName          = childBlock.getName();
-                            var parentBlockContent      = templateBlock.getContent();
-                            var childBlockPattern       = '<!--\\s+BEGIN\\s+'+childBlockName+'\\s+-->([\\s\\S]*)<!--\\s+END\\s+'+childBlockName+'\\s+-->';
-                            var matches                 = parentBlockContent.match(childBlockPattern);
-
-                            if (matches){
-
-                                if (!MINIFIED){
-                                    self.log('insertChildBlockPlaceholders', ' --> Inserting placeholder for '+childBlockName, null , 'DEBUG');
-                                }
-
-                                templateBlock.setContent(parentBlockContent.replace(matches[0],'{{__'+childBlockName+'__}}'));
-                            }
+                            var regex               = new RegExp('<!--\\s+BEGIN\\s+'+childBlock.name+'\\s+-->([\\s\\S]*)<!--\\s+END\\s+'+childBlock.name+'\\s+-->','g');
+                            templateBlock.content   = templateBlock.content.replace(regex,'{{__'+childBlock.name+'__}}');
 
                         }(childBlocks[i]));
                     }
@@ -1478,31 +1365,31 @@ if (typeof MINIFIED === 'undefined'){
         findVariablesInBlockContent : function(templateBlock){
 
             var pattern                     = /(?!\{{__[\.0-9A-Za-z\*:|_-]+__\}})\{{([\.0-9A-Za-z\*:|_-]+)\}}/mg;
-            var variableArray               = [];
-            var foundVariables              = templateBlock.getContent().match(pattern);
+            var uniqueVariables             = {};
+            var foundVariables              = templateBlock.content.match(pattern);
 
             if (foundVariables){
 
                 if (!MINIFIED){
 
-                    this.log('findVariablesInBlockContent', 'Found variables in '+templateBlock.getName(), {
+                    this.log('findVariablesInBlockContent', 'Found variables in '+templateBlock.name, {
 
-                        templateBlock           : templateBlock,
-                        foundVariables          : foundVariables
+                        templateBlock       : templateBlock,
+                        foundVariables      : foundVariables
 
                     }, 'DEBUG');
                 }
 
                 for (var i=0;i<foundVariables.length;i++){
 
-                    if (!inArray(variableArray,foundVariables[i])){
+                    if (!(foundVariables[i] in uniqueVariables)){
 
-                        var rawVariableName = foundVariables[i].replace('{{','').replace('}}','');
-                        variableArray.push(rawVariableName);
+                        var rawVariableName = foundVariables[i].substring(2,(foundVariables[i].length-2));
+
+                        uniqueVariables[rawVariableName] = 1;
+                        templateBlock.variables.push(rawVariableName);
                     }
                 }
-
-                templateBlock.setVariables(variableArray);
             }
         },
 
@@ -1516,7 +1403,7 @@ if (typeof MINIFIED === 'undefined'){
         parseBlock : function(templateBlock){
 
             if (!MINIFIED){
-                this.log('parseBlock', 'Parsing '+templateBlock.getName(), templateBlock , 'DEBUG');
+                this.log('parseBlock', 'Parsing '+templateBlock.name, templateBlock , 'DEBUG');
             }
 
             var childBlocks                 = this.blocks.getChildren(templateBlock);
@@ -1528,12 +1415,12 @@ if (typeof MINIFIED === 'undefined'){
                 }
             }
 
-            this.currentBlock               = templateBlock.getName();
+            this.currentBlock               = templateBlock.name;
 
             this.replaceBlockVariables(templateBlock);
             this.replaceChildBlockPlaceholders(templateBlock);
 
-            templateBlock.setTouched(0);
+            templateBlock.touches           = 0;
 
             return templateBlock;
         },
@@ -1546,47 +1433,50 @@ if (typeof MINIFIED === 'undefined'){
          */
         replaceBlockVariables : function(templateBlock){
 
-            var blockContent                = templateBlock.getContent();
-            var blockVariables              = templateBlock.getVariables();
-            var blockName                   = templateBlock.getName();
-            var blockVariableCache          = templateBlock.getVariableCache();
+            var blockContent                = templateBlock.content;
+            var blockName                   = templateBlock.name;
 
-            if (blockVariables.length > 0){
+            if (templateBlock.variables.length > 0){
 
                 if (!MINIFIED){
-                    this.log('replaceBlockVariables', 'Replacing block variables in '+templateBlock.getName(), templateBlock , 'DEBUG');
+                    this.log('replaceBlockVariables', 'Replacing block variables in '+templateBlock.name, templateBlock , 'DEBUG');
                 }
 
-                for (var i=0;i<blockVariables.length;i++){
+                for (var i=0;i<templateBlock.variables.length;i++){
 
-                    var variableName        = blockVariables[i];
+                    var variableName        = templateBlock.variables[i];
                     var placeholder         = '{{'+variableName+'}}';
 
                     if (blockName === this.currentBlock){
 
-                        if (variableName in blockVariableCache){
+                        /* Variables will be found in template block cache if scope was set */
+                        if (variableName in templateBlock.variableCache){
 
-                            blockContent    = blockContent.replace(placeholder,blockVariableCache[variableName]);
+                            blockContent    = blockContent.replace(placeholder,templateBlock.variableCache[variableName]);
 
                             if (!MINIFIED){
-                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+templateBlock.variableCache[variableName]+'" from template block', null , 'DEBUG');
+                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+templateBlock.variableCache[variableName]+'" from template block variable cache', null , 'DEBUG');
                             }
 
                             templateBlock.setUsedVariable(variableName,true);
-                            templateBlock.touched       = 1;
+                            templateBlock.touches       = 1;
 
-                        } else if (variableName in this.variableCache && !templateBlock.isAlreadyParsed(variableName)){
+                        }
+                        /* Variables will be found in global cache if no scope was set */
+                        else if (variableName in this.variableCache && !(variableName in templateBlock.usedVariables)){
 
                             blockContent    = blockContent.replace(placeholder,this.variableCache[variableName]);
 
                             if (!MINIFIED){
-                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+this.variableCache[variableName]+'" from variable cache', null , 'DEBUG');
+                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+this.variableCache[variableName]+'" from global variable cache', null , 'DEBUG');
                             }
 
-                            this.usedVariables[variableName] = true;
-                            templateBlock.touched       = 1;
+                            this.setUsedVariable(variableName);
+                            templateBlock.touches       = 1;
 
-                        } else {
+                        }
+                        /* If variable isn't in either cache, it gets set to an empty string */
+                        else {
 
                             if (!MINIFIED){
                                 this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with empty string', null , 'DEBUG');
@@ -1606,10 +1496,8 @@ if (typeof MINIFIED === 'undefined'){
                 }
             }
 
-            var blockTouched                = templateBlock.getTouched();
-
-            for (var j=0;j<blockTouched;j++){
-                templateBlock.addParsedContent(blockContent);
+            for (var j=0;j<templateBlock.touches;j++){
+                templateBlock.parsedContent.push(blockContent);
             }
         },
 
@@ -1620,76 +1508,83 @@ if (typeof MINIFIED === 'undefined'){
          */
         replaceChildBlockPlaceholders : function(templateBlock){
 
-            var parsedContent               = this.getParsedContent(templateBlock);
+            if (templateBlock.parsedContent.length === 0 && this.blocks.hasChildren(templateBlock)){
+                this.parseChildBlockContent(templateBlock);
+            }
+
             var childBlocks                 = this.blocks.getChildren(templateBlock);
 
             if (!isEmpty(childBlocks)){
 
                 if (!MINIFIED){
-                    this.log('replaceChildBlockPlaceholders', 'Replacing child block placeholders in '+templateBlock.getName(), { parsedContent : parsedContent } , 'DEBUG');
+                    this.log('replaceChildBlockPlaceholders', 'Replacing child block placeholders in '+templateBlock.name, { parsedContent : templateBlock.parsedContent } , 'DEBUG');
                 }
 
                 for (var i in childBlocks){
 
                     if (childBlocks.hasOwnProperty(i)){
 
-                        var placeholder     = '{{__'+childBlocks[i].getName()+'__}}';
+                        var placeholder     = '{{__'+childBlocks[i].name+'__}}';
                         var replacement     = trim(childBlocks[i].parsedContent.join(''));
 
-                        for (var j in parsedContent){
+                        for (var j in templateBlock.parsedContent){
 
-                            if (parsedContent.hasOwnProperty(j) && parsedContent[j].indexOf(placeholder) > -1){
+                            if (templateBlock.parsedContent.hasOwnProperty(j) && templateBlock.parsedContent[j].indexOf(placeholder) > -1){
 
                                 if (!MINIFIED){
                                     this.log('replaceChildBlockPlaceholders', ' --> Replacing child block '+placeholder, { replacement : replacement } , 'DEBUG');
                                 }
 
-                                parsedContent[j]        = parsedContent[j].replace(placeholder,replacement);
+                                templateBlock.parsedContent[j]  = templateBlock.parsedContent[j].replace(placeholder,replacement);
                             }
                         }
 
-                        childBlocks[i].parsedContent    = [];
+                        childBlocks[i].parsedContent            = [];
                     }
                 }
-
-                templateBlock.setParsedContent(parsedContent);
             }
         },
 
         /**
-         * Gets the parsed content from the TemplateBlock
-         *
          * If the TemplateBlock doesn't have any parsed content, but its child blocks do,
          * then the TemplateBlock is parsed now.
          *
          * @param templateBlock The TemplateBlock from which to get parsed content
          * @return {*}
          */
-        getParsedContent : function(templateBlock){
+        parseChildBlockContent : function(templateBlock){
 
-            if (templateBlock.parsedContent.length === 0 && this.blocks.hasChildren(templateBlock)){
+            var childBlocks                 = this.blocks.getChildren(templateBlock);
+            var anyChildHasContent          = false;
 
-                var childBlocks             = this.blocks.getChildren(templateBlock);
+            for (var i in childBlocks){
 
-                for (var i in childBlocks){
+                if (childBlocks.hasOwnProperty(i)){
 
-                    if (childBlocks.hasOwnProperty(i)){
-
-                        if (childBlocks[i].parsedContent.length > 0){
-
-                            this.touch(templateBlock.getName());
-                            this.replaceBlockVariables(templateBlock);
-                            break;
-                        }
+                    if (childBlocks[i].parsedContent.length > 0){
+                        anyChildHasContent  = true;
+                        break;
                     }
                 }
             }
-
-            if (!MINIFIED){
-                this.log('getParsedContent', 'Getting parsed content for '+templateBlock.getName(), { parsedContent : templateBlock.parsedContent } , 'DEBUG');
+            
+            if (anyChildHasContent){
+                templateBlock.touch();
+                this.replaceBlockVariables(templateBlock);
             }
+            
+            if (!MINIFIED){
+                this.log('parseChildBlockContent', 'Parsing child block content for '+templateBlock.name, { parsedContent : templateBlock.parsedContent } , 'DEBUG');
+            }
+        },
 
-            return templateBlock.getParsedContent();
+        /**
+         * Adds variables to the user variables registry
+         *
+         * @param variableName The name of the used variable
+         */
+        setUsedVariable : function(variableName){
+            this.usedVariables[variableName] = true;
         },
 
         /**
