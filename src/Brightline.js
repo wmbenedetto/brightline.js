@@ -1137,9 +1137,7 @@ if (typeof MINIFIED === 'undefined'){
                 this.log('render', 'Rendering '+blockName);
             }
 
-            this.parse(blockName);
-
-            var templateBlock               = this.getBlock(blockName);
+            var templateBlock               = this.parse(blockName);
             var templateString              = trim(templateBlock.parsedContent.join("\n"));
 
             this.clearScope();
@@ -1166,16 +1164,15 @@ if (typeof MINIFIED === 'undefined'){
 
             blockName                       = (typeof blockName === 'undefined') ? '__root__' : blockName;
 
-            this.parse(blockName,false);
-
-            var templateBlock               = this.getBlock(blockName);
-            var templateString              = trim(templateBlock.parsedContent.join("\n"));
+            var templateBlock               = this.parse(blockName,false);
+            var parsedContent               = templateBlock.parsedContent;
+            var templateString              = trim(parsedContent.join("\n"));
 
             if (templateString.length === 0){
                 templateString              = templateBlock.content;
             }
 
-            templateBlock.parsedContent     = templateBlock.parsedContent.slice(0, 0 - templateBlock.touches);
+            templateBlock.parsedContent     = parsedContent.slice(0, 0 - templateBlock.touches);
 
             this.clearScope();
 
@@ -1335,7 +1332,7 @@ if (typeof MINIFIED === 'undefined'){
             if (this.blocks.hasChildren(templateBlock)){
 
                 if (!MINIFIED){
-                    this.log('insertChildBlockPlaceholders', 'Inserting child block placeholders in '+templateBlock.getName(), templateBlock , 'DEBUG');
+                    this.log('insertChildBlockPlaceholders', 'Inserting child block placeholders in '+templateBlock.name, templateBlock , 'DEBUG');
                 }
 
                 var parentBlockContent      = templateBlock.content;
@@ -1358,12 +1355,14 @@ if (typeof MINIFIED === 'undefined'){
                                     self.log('insertChildBlockPlaceholders', ' --> Inserting placeholder for '+childBlockName, null , 'DEBUG');
                                 }
 
-                                templateBlock.content = parentBlockContent.replace(matches[0],'{{__'+childBlockName+'__}}');
+                                parentBlockContent      = parentBlockContent.replace(matches[0],'{{__'+childBlockName+'__}}');
                             }
 
                         }(childBlocks[i]));
                     }
                 }
+
+                templateBlock.content                   = parentBlockContent;
             }
         },
 
@@ -1397,7 +1396,7 @@ if (typeof MINIFIED === 'undefined'){
 
                     if (!(foundVariables[i] in uniqueVariables)){
 
-                        var rawVariableName = foundVariables[i].substring(2,(foundVariables[i].length-2));
+                        var rawVariableName = foundVariables[i].replace('{{','').replace('}}','');
 
                         uniqueVariables[rawVariableName] = 1;
                         blockVariables.push(rawVariableName);
