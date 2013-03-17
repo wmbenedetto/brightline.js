@@ -87,7 +87,9 @@ Because the template logic is in your JavaScript code, there's no need for Brigh
 
 Brightline.js is faster than all the most popular JavaScript templating engines: jQuery, Mustache, Handlebars, and underscore. Don't believe it? Check out the benchmarks at http://jsperf.com/javascript-templates
 
-![Brightline vs the rest](http://i.imgur.com/CPW9XKw.png "Benchmarks")
+![Brightline vs the rest](http://i.imgur.com/CPW9XKw.png "Benchmarks Table")
+![Brightline vs the rest](http://i.imgur.com/O9R0NoX.png "Benchmarks Graph - Higher is better")
+**(NOTE: Longer bar == faster rendering)**
 
 ## Quick install
 
