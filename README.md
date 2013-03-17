@@ -43,8 +43,7 @@ Template.registerHelper('list', function(context, options) {
   }).join("\n") + "</ul>";
 });
 ```
-
-Holy hell. What a nightmare. 
+![MOTHER OF GOD](http://i.imgur.com/siKwfUR.jpg "MOTHER OF GOD")
 
 HTML tags in the JavaScript? What is this, the 90's? 
 
