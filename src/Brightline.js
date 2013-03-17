@@ -1335,10 +1335,12 @@ if (typeof MINIFIED === 'undefined'){
             if (this.blocks.hasChildren(templateBlock)){
 
                 if (!MINIFIED){
-                    this.log('insertChildBlockPlaceholders', 'Inserting child block placeholders in '+templateBlock.name, templateBlock , 'DEBUG');
+                    this.log('insertChildBlockPlaceholders', 'Inserting child block placeholders in '+templateBlock.getName(), templateBlock , 'DEBUG');
                 }
 
-                var childBlocks                     = this.blocks.getChildren(templateBlock);
+                var parentBlockContent      = templateBlock.content;
+                var childBlocks             = this.blocks.getChildren(templateBlock);
+                var self                    = this;
 
                 for (var i in childBlocks){
 
@@ -1346,9 +1348,18 @@ if (typeof MINIFIED === 'undefined'){
 
                         (function(childBlock){
 
-                            var childBlockName      = childBlock.name;
-                            var regex               = new RegExp('<!--\\s+BEGIN\\s+'+childBlockName+'\\s+-->([\\s\\S]*)<!--\\s+END\\s+'+childBlockName+'\\s+-->','g');
-                            templateBlock.content   = templateBlock.content.replace(regex,'{{__'+childBlockName+'__}}');
+                            var childBlockName          = childBlock.name;
+                            var childBlockPattern       = '<!--\\s+BEGIN\\s+'+childBlockName+'\\s+-->([\\s\\S]*)<!--\\s+END\\s+'+childBlockName+'\\s+-->';
+                            var matches                 = parentBlockContent.match(childBlockPattern);
+
+                            if (matches){
+
+                                if (!MINIFIED){
+                                    self.log('insertChildBlockPlaceholders', ' --> Inserting placeholder for '+childBlockName, null , 'DEBUG');
+                                }
+
+                                templateBlock.content = parentBlockContent.replace(matches[0],'{{__'+childBlockName+'__}}');
+                            }
 
                         }(childBlocks[i]));
                     }
@@ -1392,9 +1403,9 @@ if (typeof MINIFIED === 'undefined'){
                         blockVariables.push(rawVariableName);
                     }
                 }
-            }
 
-            templateBlock.variables         = blockVariables;
+                templateBlock.variables     = blockVariables;
+            }
         },
 
         /**
@@ -1442,6 +1453,7 @@ if (typeof MINIFIED === 'undefined'){
             var numBlockVariables           = blockVariables.length;
             var blockName                   = templateBlock.name;
             var blockVariableCache          = templateBlock.variableCache;
+            var blockUserVariables          = templateBlock.usedVariables;
             var currentBlock                = this.currentBlock;
             var globalVariableCache         = this.variableCache;
             var globalUsedVariables         = this.usedVariables;
@@ -1449,7 +1461,7 @@ if (typeof MINIFIED === 'undefined'){
             if (numBlockVariables > 0){
 
                 if (!MINIFIED){
-                    this.log('replaceBlockVariables', 'Replacing block variables in '+templateBlock.name, templateBlock , 'DEBUG');
+                    this.log('replaceBlockVariables', 'Replacing block variables in '+blockName, templateBlock , 'DEBUG');
                 }
 
                 for (var i=0;i<numBlockVariables;i++){
@@ -1473,7 +1485,7 @@ if (typeof MINIFIED === 'undefined'){
 
                         }
                         /* Variables will be found in global cache if no scope was set */
-                        else if (variableName in globalVariableCache && !(variableName in templateBlock.usedVariables)){
+                        else if (variableName in globalVariableCache && !(variableName in blockUserVariables)){
 
                             blockContent    = blockContent.replace(placeholder,globalVariableCache[variableName]);
 
@@ -1524,7 +1536,7 @@ if (typeof MINIFIED === 'undefined'){
                 this.parseChildBlockContent(templateBlock);
             }
 
-            var parsedContent               = templateBlock.parsedContent
+            var parsedContent               = templateBlock.parsedContent;
             var childBlocks                 = this.blocks.getChildren(templateBlock);
 
             if (!isEmpty(childBlocks)){
