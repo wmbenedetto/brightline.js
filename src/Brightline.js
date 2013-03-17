@@ -1346,8 +1346,9 @@ if (typeof MINIFIED === 'undefined'){
 
                         (function(childBlock){
 
-                            var regex               = new RegExp('<!--\\s+BEGIN\\s+'+childBlock.name+'\\s+-->([\\s\\S]*)<!--\\s+END\\s+'+childBlock.name+'\\s+-->','g');
-                            templateBlock.content   = templateBlock.content.replace(regex,'{{__'+childBlock.name+'__}}');
+                            var childBlockName      = childBlock.name;
+                            var regex               = new RegExp('<!--\\s+BEGIN\\s+'+childBlockName+'\\s+-->([\\s\\S]*)<!--\\s+END\\s+'+childBlockName+'\\s+-->','g');
+                            templateBlock.content   = templateBlock.content.replace(regex,'{{__'+childBlockName+'__}}');
 
                         }(childBlocks[i]));
                     }
@@ -1367,6 +1368,7 @@ if (typeof MINIFIED === 'undefined'){
             var pattern                     = /(?!\{{__[\.0-9A-Za-z\*:|_-]+__\}})\{{([\.0-9A-Za-z\*:|_-]+)\}}/mg;
             var uniqueVariables             = {};
             var foundVariables              = templateBlock.content.match(pattern);
+            var blockVariables              = [];
 
             if (foundVariables){
 
@@ -1387,10 +1389,12 @@ if (typeof MINIFIED === 'undefined'){
                         var rawVariableName = foundVariables[i].substring(2,(foundVariables[i].length-2));
 
                         uniqueVariables[rawVariableName] = 1;
-                        templateBlock.variables.push(rawVariableName);
+                        blockVariables.push(rawVariableName);
                     }
                 }
             }
+
+            templateBlock.variables         = blockVariables;
         },
 
         /**
@@ -1434,28 +1438,34 @@ if (typeof MINIFIED === 'undefined'){
         replaceBlockVariables : function(templateBlock){
 
             var blockContent                = templateBlock.content;
+            var blockVariables              = templateBlock.variables;
+            var numBlockVariables           = blockVariables.length;
             var blockName                   = templateBlock.name;
+            var blockVariableCache          = templateBlock.variableCache;
+            var currentBlock                = this.currentBlock;
+            var globalVariableCache         = this.variableCache;
+            var globalUsedVariables         = this.usedVariables;
 
-            if (templateBlock.variables.length > 0){
+            if (numBlockVariables > 0){
 
                 if (!MINIFIED){
                     this.log('replaceBlockVariables', 'Replacing block variables in '+templateBlock.name, templateBlock , 'DEBUG');
                 }
 
-                for (var i=0;i<templateBlock.variables.length;i++){
+                for (var i=0;i<numBlockVariables;i++){
 
-                    var variableName        = templateBlock.variables[i];
+                    var variableName        = blockVariables[i];
                     var placeholder         = '{{'+variableName+'}}';
 
-                    if (blockName === this.currentBlock){
+                    if (blockName === currentBlock){
 
                         /* Variables will be found in template block cache if scope was set */
-                        if (variableName in templateBlock.variableCache){
+                        if (variableName in blockVariableCache){
 
-                            blockContent    = blockContent.replace(placeholder,templateBlock.variableCache[variableName]);
+                            blockContent    = blockContent.replace(placeholder,blockVariableCache[variableName]);
 
                             if (!MINIFIED){
-                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+templateBlock.variableCache[variableName]+'" from template block variable cache', null , 'DEBUG');
+                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+blockVariableCache[variableName]+'" from template block variable cache', null , 'DEBUG');
                             }
 
                             templateBlock.setUsedVariable(variableName,true);
@@ -1463,16 +1473,16 @@ if (typeof MINIFIED === 'undefined'){
 
                         }
                         /* Variables will be found in global cache if no scope was set */
-                        else if (variableName in this.variableCache && !(variableName in templateBlock.usedVariables)){
+                        else if (variableName in globalVariableCache && !(variableName in templateBlock.usedVariables)){
 
-                            blockContent    = blockContent.replace(placeholder,this.variableCache[variableName]);
+                            blockContent    = blockContent.replace(placeholder,globalVariableCache[variableName]);
 
                             if (!MINIFIED){
-                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+this.variableCache[variableName]+'" from global variable cache', null , 'DEBUG');
+                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+globalVariableCache[variableName]+'" from global variable cache', null , 'DEBUG');
                             }
 
-                            this.setUsedVariable(variableName);
-                            templateBlock.touches       = 1;
+                            globalUsedVariables[variableName]       = true;
+                            templateBlock.touches                   = 1;
 
                         }
                         /* If variable isn't in either cache, it gets set to an empty string */
@@ -1496,7 +1506,9 @@ if (typeof MINIFIED === 'undefined'){
                 }
             }
 
-            for (var j=0;j<templateBlock.touches;j++){
+            var numBlockTouches             = templateBlock.touches;
+
+            for (var j=0;j<numBlockTouches;j++){
                 templateBlock.parsedContent.push(blockContent);
             }
         },
@@ -1512,12 +1524,13 @@ if (typeof MINIFIED === 'undefined'){
                 this.parseChildBlockContent(templateBlock);
             }
 
+            var parsedContent               = templateBlock.parsedContent
             var childBlocks                 = this.blocks.getChildren(templateBlock);
 
             if (!isEmpty(childBlocks)){
 
                 if (!MINIFIED){
-                    this.log('replaceChildBlockPlaceholders', 'Replacing child block placeholders in '+templateBlock.name, { parsedContent : templateBlock.parsedContent } , 'DEBUG');
+                    this.log('replaceChildBlockPlaceholders', 'Replacing child block placeholders in '+templateBlock.name, { parsedContent : parsedContent } , 'DEBUG');
                 }
 
                 for (var i in childBlocks){
@@ -1527,19 +1540,19 @@ if (typeof MINIFIED === 'undefined'){
                         var placeholder     = '{{__'+childBlocks[i].name+'__}}';
                         var replacement     = trim(childBlocks[i].parsedContent.join(''));
 
-                        for (var j in templateBlock.parsedContent){
+                        for (var j in parsedContent){
 
-                            if (templateBlock.parsedContent.hasOwnProperty(j) && templateBlock.parsedContent[j].indexOf(placeholder) > -1){
+                            if (parsedContent.hasOwnProperty(j) && parsedContent[j].indexOf(placeholder) > -1){
 
                                 if (!MINIFIED){
                                     this.log('replaceChildBlockPlaceholders', ' --> Replacing child block '+placeholder, { replacement : replacement } , 'DEBUG');
                                 }
 
-                                templateBlock.parsedContent[j]  = templateBlock.parsedContent[j].replace(placeholder,replacement);
+                                parsedContent[j]        = parsedContent[j].replace(placeholder,replacement);
                             }
                         }
 
-                        childBlocks[i].parsedContent            = [];
+                        childBlocks[i].parsedContent    = [];
                     }
                 }
             }
@@ -1579,15 +1592,6 @@ if (typeof MINIFIED === 'undefined'){
         },
 
         /**
-         * Adds variables to the user variables registry
-         *
-         * @param variableName The name of the used variable
-         */
-        setUsedVariable : function(variableName){
-            this.usedVariables[variableName] = true;
-        },
-
-        /**
          * Clears variables which have been used from the variable cache
          */
         clearUsedVariablesFromCache : function(){
@@ -1596,14 +1600,17 @@ if (typeof MINIFIED === 'undefined'){
                 this.log('clearUsedVariablesFromCache', 'Clearing used variables from cache', this.usedVariables , 'DEBUG');
             }
 
-            for (var varName in this.usedVariables){
+            var usedVars                    = this.usedVariables;
+            var varCache                    = this.variableCache;
 
-                if (this.usedVariables.hasOwnProperty(varName)){
+            for (var varName in usedVars){
+
+                if (usedVars.hasOwnProperty(varName)){
 
                     try {
-                        delete this.variableCache[varName];
+                        delete varCache[varName];
                     } catch (e) {
-                        this.variableCache[varName] = undefined;
+                        varCache[varName] = undefined;
                     }
                 }
             }
