@@ -1038,10 +1038,10 @@ if (typeof MINIFIED === 'undefined'){
             var varName                     = null;
             var callback                    = null;
 
-            if (typeof args[2] === 'function'){
-                callback                    = args[2];
-            } else if (typeof args[2] === 'string'){
+            if (typeof args[2] === 'string'){
                 varName                     = args[2];
+            } else if (typeof args[2] === 'function'){
+                callback                    = args[2];
             }
 
             if (!callback && typeof args[3] === 'function'){
