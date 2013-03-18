@@ -36,7 +36,7 @@
             margin-top:6px;
         }
 
-        p {
+        p,ul {
             font-size:12px;
             line-height:19px;
         }
@@ -105,6 +105,23 @@
             <!-- BEGIN paragraph -->
             <p>{{paragraph}}</p>
             <!-- END paragraph -->
+
+            <h3>Press</h3>
+            <ul>
+                <!-- BEGIN pressGroup -->
+                <li>
+                    <div><b>{{type}}</b></div>
+                    <ul>
+                        <!-- BEGIN pressItem -->
+                        <li>
+                            <a href="{{url}}">{{title}}</a>
+                        </li>
+                        <!-- END pressItem -->
+                    </ul>
+                </li>
+                <!-- END pressGroup -->
+            </ul>
+
         </div>
 
         <!-- BEGIN pageID -->
@@ -187,6 +204,51 @@
      * {{name}}, {{about}}, and {{cover.source}}. Also sets
      * {{link}} in header block. */
     template.set(data);
+
+    var pressData = [
+        {
+            type : 'Blog',
+            items : [
+                {
+                    url : 'http://readwrite.com/2010/01/19/use_chrome_stay_focused_new_plugin_limits_frivolou',
+                    title : 'Use Chrome, Stay Focused: New Plugin Limits Frivolous Browsing'
+                },
+                {
+                    url : 'http://lifehacker.com/5452620/stayfocusd-blocks-and-manages-time+sucking-web-sites',
+                    title : 'StayFocusd Blocks and Manages Time-Sucking Web Sites - Distractions - Lifehacker'
+                },
+                {
+                    url : 'http://www.makeuseof.com/dir/stayfocusd-block-time-wasting-websites/',
+                    title : 'StayFocusd: Block Time Wasting Websites (Google Chrome Addon)'
+                }
+            ]
+        },
+        {
+            type : 'Print',
+            items : [
+                {
+                    url : 'http://www.theglobeandmail.com/life/relationships/how-to-fight-digital-distraction-turn-your-friends-off/article570273/',
+                    title : 'How to fight digital distraction? Turn your friends off - The Globe and Mail'
+                },
+                {
+                    url : 'http://technology.inc.com/2011/03/14/how-self-tracking-can-benefit-business/',
+                    title : 'How Self-Tracking Can Benefit Business'
+                },
+                {
+                    url : 'http://money.usnews.com/money/blogs/outside-voices-careers/2012/04/10/10-must-have-tools-for-time-management-',
+                    title : '10 Must-Have Tools for Time Management - On Careers'
+                }
+            ]
+        }
+    ];
+
+    /* Iterate over pressData array, parsing the pressGroup block on each iteration */
+    template.each(pressData,'pressGroup',function(data,i){
+
+        /* Iterate over the items array in each pressData element, parsing the
+         * pressItem block for each iteration */
+        template.each(data.items,'pressItem');
+    });
 
     /* Snip the pageID block, rendering it with the {{id}} value from
      * data without having it show up in the rendered template. */

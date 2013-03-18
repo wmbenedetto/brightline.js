@@ -912,7 +912,8 @@ if (typeof MINIFIED === 'undefined'){
                  render                         : this.render.bind(this),
                  snip                           : this.snip.bind(this),
                  setLogLevel                    : this.setLogLevel.bind(this),
-                 setName                        : this.setName.bind(this)
+                 setName                        : this.setName.bind(this),
+                 each                           : this.each.bind(this)
              }
         },
 
@@ -1010,6 +1011,36 @@ if (typeof MINIFIED === 'undefined'){
             }
 
             return this;
+        },
+
+        /**
+         * Iterates over an array of object literals, setting variables
+         * using each, then parsing the given block name.
+         *
+         * Optional callback is called on each iteration. It is passed
+         * the current object, and can be used to parse nested blocks.
+         *
+         * @param data The data over which to iterate
+         * @param blockName The name of the block to parse
+         * @param callback Optional callback function
+         */
+        each : function(data,blockName,callback){
+
+            for (var i in data){
+
+                if (data.hasOwnProperty(i)){
+
+                    if (isObjLiteral(data[i])){
+                        this.set(data[i]);
+                    }
+
+                    if (typeof callback === 'function'){
+                        callback(data[i],i);
+                    }
+
+                    this.parse(blockName);
+                }
+            }
         },
 
         /**
@@ -1307,8 +1338,8 @@ if (typeof MINIFIED === 'undefined'){
 
                 this.log('setObject', 'Setting object vars', {
 
-                    originalObj                 : obj,
-                    flattenedObj                : flattenedObj
+                    originalObj             : obj,
+                    flattenedObj            : flattenedObj
 
                 }, 'DEBUG');
             }
