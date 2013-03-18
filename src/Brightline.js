@@ -912,7 +912,8 @@ if (typeof MINIFIED === 'undefined'){
                  render                         : this.render.bind(this),
                  snip                           : this.snip.bind(this),
                  setLogLevel                    : this.setLogLevel.bind(this),
-                 setName                        : this.setName.bind(this)
+                 setName                        : this.setName.bind(this),
+                 each                           : this.each.bind(this)
              }
         },
 
@@ -963,6 +964,7 @@ if (typeof MINIFIED === 'undefined'){
          *
          * By default, calling set() will replace ALL instances of the variable in
          * the template, automatically parsing any blocks where the variable appears.
+         *
          * If you need to limit the blocks in which the variable is replaced, you'll
          * need to use set() in conjunction with setScope()
          */
@@ -1010,6 +1012,61 @@ if (typeof MINIFIED === 'undefined'){
             }
 
             return this;
+        },
+
+        /**
+         * Iterates over an array of scalar values or object literals
+         *
+         * If the array contains scalar values, then you must pass the
+         * array, the block name, the variable name, and an optional callback:
+         *
+         * template.each(someArray,blockName,varName,callbackFunc);
+         *
+         * If the array contains object literals, then you must pass the
+         * array, the block name, and an optional callback. (The object's
+         * property names will be used as variable names.)
+         *
+         * template.each(someArray,blockName,callbackFunc);
+         *
+         * Optional callback is called on each iteration. The current object
+         * and iteration counter are passed to it so the callback can be used
+         * to parse nested blocks.
+         */
+        each : function(){
+
+            var args                        = Array.prototype.slice.call(arguments);
+            var data                        = args[0];
+            var blockName                   = args[1];
+            var varName                     = null;
+            var callback                    = null;
+
+            if (typeof args[2] === 'string'){
+                varName                     = args[2];
+            } else if (typeof args[2] === 'function'){
+                callback                    = args[2];
+            }
+
+            if (!callback && typeof args[3] === 'function'){
+                callback                    = args[3];
+            }
+
+            for (var i in data){
+
+                if (data.hasOwnProperty(i)){
+
+                    if (isObjLiteral(data[i])){
+                        this.set(data[i]);
+                    } else if (varName) {
+                        this.set(varName,data[i]);
+                    }
+
+                    if (callback){
+                        callback(data[i],i);
+                    }
+
+                    this.parse(blockName);
+                }
+            }
         },
 
         /**
@@ -1307,8 +1364,8 @@ if (typeof MINIFIED === 'undefined'){
 
                 this.log('setObject', 'Setting object vars', {
 
-                    originalObj                 : obj,
-                    flattenedObj                : flattenedObj
+                    originalObj             : obj,
+                    flattenedObj            : flattenedObj
 
                 }, 'DEBUG');
             }
