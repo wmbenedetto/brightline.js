@@ -284,20 +284,21 @@ Alternately, clone this repo and look at the `examples` directory. You'll find a
 
 All of Brightline's power is derived from a handful of simple methods:
 
- * [Brightline(*templateString*,*options*)](#brightlinetemplatestring-options)
- * [set(*key*,*value*) OR set(*contentObj*)](#setkeyvalue-or-setcontentobj)
+ * [Brightline(templateString,options)](#brightlinetemplatestring-options)
+ * [set(key,value) OR set(contentObj)](#setkeyvalue-or-setcontentobj)
+ * [each(arrayOfScalars,blockName,varName,callbackFunc) OR each(arrayOfObjects,blockName,callbackFunc)](#eacharrayofscalarsblocknamevarnamecallbackfunc-or-eacharrayofobjectsblocknamecallbackfunc)
  * [setScope(blockName)](#setscopeblockname)
  * [clearScope()](#clearscope)
- * [parse(*blockName*)](#parseblockname)
- * [touch(*blockName*)](#touchblockname)
- * [render(*blockName*)](#renderblockname)
- * [snip(*blockName*)](#snipblockname)
+ * [parse(blockName)](#parseblockname)
+ * [touch(blockName)](#touchblockname)
+ * [render(blockName)](#renderblockname)
+ * [snip(blockName)](#snipblockname)
  
 *NOTE:* All the examples in the API docs display templates as HTML blocks and JavaScript as code blocks. The presumption is that the html template will be fetched into a variable named `templateString` by whatever means you choose. So, when you see something like `new Brightline(templateString)`, assume that `templateString` contains the contents of the template in the example.
       
 ---
 
-### Brightline(*templateString*, *options*)
+### Brightline(templateString, options)
 * [REQUIRED] *templateString:* HTML string containing variables and/or blocks
 * [OPTIONAL] *options:* Optional object containing configuration options
 
@@ -332,7 +333,7 @@ var template = new Brightline(templateString,options);
 
 ---
 
-### set(*key*,*value*) or set(*contentObj*)
+### set(key,value) or set(contentObj)
 * [REQUIRED] *key:* Variable name
 * [REQUIRED] *value:* Variable value
                     
@@ -344,7 +345,7 @@ The `set()` method is used to set the value of a variable in a template. It can 
 
 Calling `set()` once will replace *all* instances of the variable in the template. If you want to limit the replacement of a variable to a certain block, you'll need to use `set()` in conjunction with `setScope()`. 
 
-##### set(*key*,*value*)
+##### set(key,value)
 
 ```html
 {{man}} is married to {{woman}}. {{man}} loves {{woman}} very much.
@@ -363,7 +364,7 @@ template.set('woman','Angelina');
 Brad is married to Angelina. Brad loves Angelina very much.
 ```
 
-##### set(*contentObj*)
+##### set(contentObj)
 
 ```html
 {{man}} is married to {{woman}}. {{man}} loves {{woman}} very much. They live in {{home.city}}, {{home.state}}.
@@ -390,7 +391,190 @@ Brad is married to Angelina. Brad loves Angelina very much. They live in Los Ang
 
 ---
 
-### setScope(*blockName*)
+### each(arrayOfScalars,blockName,varName,callbackFunc) OR each(arrayOfObjects,blockName,callbackFunc)
+* [REQUIRED] *arrayOfScalars:* Array of scalar values (strings, numbers, booleans, floats)
+* [REQUIRED] *blockName:* The name of the block to parse on each iteration
+* [REQUIRED] *varName:* The name of the variable in the block to replace on each iteration
+* [OPTIONAL] *callbackFunc:* Optional callback function, called on each iteration
+                    
+**OR**
+
+* [REQUIRED] *arrayOfObjects:* Array of object literals
+* [REQUIRED] *blockName:* The name of the block to parse on each iteration
+* [OPTIONAL] *callbackFunc:* Optional callback function, called on each iteration
+
+The `each()` method is syntactic sugar for iterating over an array of scalar values (strings, numbers, booleans, floats), or an array of object literals.
+
+For each item in the array, Brightline parses the block named in the second argument. 
+
+If the array contains scalar values, then the third argument tells Brightline which variable to replace with the item's value. If the array contains object literals, then the names of each object's properties will be used as variable names for replacement purposes.
+
+Both forms accept an optional callback function. This function is called on each iteration, and it is passed the value of the current item in the array, plus the iteration counter. If the item itself contains an array, `each()` can be called inside the callback to build out more complex nested template structures.
+
+##### each(arrayOfScalars,blockName,varName,callbackFunc)
+
+```html
+<!-- BEGIN actor -->
+<div>{{name}}</div>
+<!-- END actor -->
+```
+
+```javascript
+var actors = [
+    'Brad Pitt',
+    'George Clooney',
+    'Matt Damon'
+];
+
+var template = new Brightline(templateString);
+template.each(actors,'actor','name');
+```
+
+###### Result:
+
+```html
+<div>Brad Pitt</div>
+<div>George Clooney</div>
+<div>Matt Damon</div>
+```
+
+##### each(arrayOfObjects,blockName) // no callback function
+
+```html
+<ul>
+<!-- BEGIN actor -->
+<li>
+    <div>First: {{firstName}}</div>
+    <div>Last: {{lastName}}</div>
+</li>
+<!-- END actor -->
+</ul>
+```
+
+```javascript
+var actors = [
+    { firstName : 'Brad',   lastName : 'Pitt' },
+    { firstName : 'George', lastName : 'Clooney' },
+    { firstName : 'Matt',   lastName : 'Damon' }
+];
+
+var template = new Brightline(templateString);
+
+template.each(actors,'actor');
+```
+
+###### Result:
+
+```html
+<ul>
+<li>
+    <div>First: Brad</div>
+    <div>Last: Pitt</div>
+</li>
+<li>
+    <div>First: George</div>
+    <div>Last: Clooney</div>
+</li>
+<li>
+    <div>First: Matt</div>
+    <div>Last: Damon</div>
+</li>
+</ul>
+```
+
+##### each(arrayOfObjects,blockName,callbackFunc) // with callback function
+
+```html
+<ul>
+<!-- BEGIN actor -->
+<li>
+    <div>First: {{firstName}}</div>
+    <div>Last: {{lastName}}</div>
+    <ul>
+        <!-- BEGIN movie -->
+        <li>{{title}}</li>
+        <!-- END movie -->
+    </ul>
+</li>
+<!-- END actor -->
+</ul>
+```
+
+```javascript
+var actors = [
+    { 
+        firstName : 'Brad',   
+        lastName : 'Pitt', 
+        movies : [
+            'Seven',
+            'Meet Joe Black',
+            '12 Monkeys'
+        ] 
+    },
+    { 
+        firstName : 'George',   
+        lastName : 'Clooney', 
+        movies : [
+            'Oceans 11',
+            'The Descendants',
+            'Syriana'
+        ] 
+    },
+    { 
+        firstName : 'Matt',   
+        lastName : 'Damon', 
+        movies : [
+            'Courage Under Fire',
+            'Good Will Hunting',
+            'The Bourne Supremacy'
+        ] 
+    }
+];
+
+var template = new Brightline(templateString);
+
+template.each(actors,'actor',function(actor,i){
+    template.each(actor.movies,'movie','title');
+});
+```
+
+###### Result:
+
+```html
+<ul>
+<li>
+    <div>First: Brad</div>
+    <div>Last: Pitt</div>
+    <ul>
+        <li>Seven</li>
+        <li>Meet Joe Black</li>
+        <li>12 Monkeys</li>
+    </ul>
+</li>
+<li>
+    <div>First: George</div>
+    <div>Last: Clooney</div>
+    <ul>
+        <li>Oceans 11</li>
+        <li>The Descendants</li>
+        <li>Syriana</li>
+    </ul>
+</li>
+<li>
+    <div>First: Matt</div>
+    <div>Last: Damon</div>
+    <ul>
+        <li>Courage Under Fire</li>
+        <li>Good Will Hunting</li>   
+        <li>The Bourne Supremacy</li>
+    </ul>
+</li>
+</ul>
+```
+
+---
+
+### setScope(blockName)
 * [REQUIRED] *blockName:* The name of the block to which the scope will be set
 
 The `setScope()` method is used to limit the scope of variable replacements to a specific block. 
@@ -479,7 +663,7 @@ template.set('adjective','great'); // This will set {{adjective}} in both blocks
 ```
 ---
 
-### parse(*blockName*)
+### parse(blockName)
 * [REQUIRED] *blockName:* The name of the block to parse
 
 The `parse()` method adds a block to the rendered template. By default, `parse()` is called internally whenever a variable is set. In other words, setting a variable will result in any blocks containing the variable to be automatically added to the rendered template.
@@ -515,7 +699,7 @@ for (var i=0;i<actors.length;i++){
 ```
 ---
 
-### touch(*blockName*)
+### touch(blockName)
 * [REQUIRED] *blockName:* The name of the block to touch
 
 The `touch()` method adds a block to the rendered template, even when it doesn't have any variables in it. 
@@ -560,7 +744,7 @@ I am very, very, very, very, happy to see you!
 ```
 ---
 
-### render(*blockName*)
+### render(blockName)
 * [OPTIONAL] *blockName:* The name of the block to render. If no block is specified, the entire template is rendered.
 
 The `render()` method returns a template string in which all variables have been replaced and blocks have been parsed and/or touched.
@@ -636,7 +820,7 @@ var html = template2.render();
 
 ---
 
-### snip(*blockName*)
+### snip(blockName)
 * [REQUIRED] *blockName:* The name of the block to snip
 
 The `snip()` method gets the rendered content of a block, without actually touching it (so it won't appear in the rendered template itself). This is useful when there's content in a template that you want to pull into a variable.
