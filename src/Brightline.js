@@ -1014,17 +1014,39 @@ if (typeof MINIFIED === 'undefined'){
         },
 
         /**
-         * Iterates over an array of object literals, setting variables
-         * using each, then parsing the given block name.
+         * Iterates over an array of scalar values or object literals
          *
-         * Optional callback is called on each iteration. It is passed
-         * the current object, and can be used to parse nested blocks.
+         * If the array contains scalar values, then you must pass the
+         * array, the block name, the variable name, and an optional callback:
          *
-         * @param data The data over which to iterate
-         * @param blockName The name of the block to parse
-         * @param callback Optional callback function
+         * template.each(someArray,blockName,varName,callbackFunc);
+         *
+         * If the array contains object literals, then you must pass the
+         * array, the block name, and an optional callback. (The object's
+         * property names will be used as variable names.)
+         *
+         * template.each(someArray,blockName,callbackFunc);
+         *
+         * Optional callback is called on each iteration. The current object
+         * is passed to it so the callback can be used to parse nested blocks.
          */
-        each : function(data,blockName,callback){
+        each : function(){
+
+            var args                        = Array.prototype.slice.call(arguments);
+            var data                        = args[0];
+            var blockName                   = args[1];
+            var varName                     = null;
+            var callback                    = null;
+
+            if (typeof args[2] === 'function'){
+                callback                    = args[2];
+            } else if (typeof args[2] === 'string'){
+                varName                     = args[2];
+            }
+
+            if (!callback && typeof args[3] === 'function'){
+                callback                    = args[3];
+            }
 
             for (var i in data){
 
@@ -1032,6 +1054,8 @@ if (typeof MINIFIED === 'undefined'){
 
                     if (isObjLiteral(data[i])){
                         this.set(data[i]);
+                    } else if (varName) {
+                        this.set(varName,data[i]);
                     }
 
                     if (typeof callback === 'function'){

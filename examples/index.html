@@ -106,7 +106,7 @@
             <p>{{paragraph}}</p>
             <!-- END paragraph -->
 
-            <h3>Press</h3>
+            <h3>Articles</h3>
             <ul>
                 <!-- BEGIN pressGroup -->
                 <li>
@@ -122,6 +122,12 @@
                 <!-- END pressGroup -->
             </ul>
 
+            <h3>As Seen On</h3>
+            <ul>
+                <!-- BEGIN publication -->
+                <li>{{pubName}}</li>
+                <!-- END publication -->
+            </ul>
         </div>
 
         <!-- BEGIN pageID -->
@@ -205,6 +211,7 @@
      * {{link}} in header block. */
     template.set(data);
 
+    /* Sample data to use for each() iterator example below */
     var pressData = [
         {
             type : 'Blog',
@@ -242,13 +249,34 @@
         }
     ];
 
-    /* Iterate over pressData array, parsing the pressGroup block on each iteration */
+    /* Iterate over array of object literals, parsing the pressGroup block on each iteration */
     template.each(pressData,'pressGroup',function(data,i){
 
         /* Iterate over the items array in each pressData element, parsing the
          * pressItem block for each iteration */
         template.each(data.items,'pressItem');
     });
+
+    /* Sample data to use for each() iterator example below */
+    var asSeenOn = [
+        'Mashable',
+        'Gizmodo',
+        'Gawker',
+        'Lifehacker',
+        'cnet',
+        'ReadWriteWeb',
+        'The Washington Post',
+        'Maximum PC',
+        'PC Magazine',
+        'MakeUseOf',
+        'GigaOm',
+        'The Next Web',
+        'The Huffington Post',
+        'MSNBC'
+    ];
+
+    /* Iterate over array of scalar values */
+    template.each(asSeenOn,'publication','pubName');
 
     /* Snip the pageID block, rendering it with the {{id}} value from
      * data without having it show up in the rendered template. */
