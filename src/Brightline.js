@@ -964,6 +964,7 @@ if (typeof MINIFIED === 'undefined'){
          *
          * By default, calling set() will replace ALL instances of the variable in
          * the template, automatically parsing any blocks where the variable appears.
+         *
          * If you need to limit the blocks in which the variable is replaced, you'll
          * need to use set() in conjunction with setScope()
          */
@@ -1028,7 +1029,8 @@ if (typeof MINIFIED === 'undefined'){
          * template.each(someArray,blockName,callbackFunc);
          *
          * Optional callback is called on each iteration. The current object
-         * is passed to it so the callback can be used to parse nested blocks.
+         * and iteration counter are passed to it so the callback can be used
+         * to parse nested blocks.
          */
         each : function(){
 
@@ -1058,7 +1060,7 @@ if (typeof MINIFIED === 'undefined'){
                         this.set(varName,data[i]);
                     }
 
-                    if (typeof callback === 'function'){
+                    if (callback){
                         callback(data[i],i);
                     }
 
