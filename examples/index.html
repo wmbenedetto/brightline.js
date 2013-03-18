@@ -128,6 +128,20 @@
                 <li>{{pubName}}</li>
                 <!-- END publication -->
             </ul>
+
+            <ul>
+<!-- BEGIN actor -->
+<li>
+    <div>First: {{firstName}}</div>
+    <div>Last: {{lastName}}</div>
+    <ul>
+        <!-- BEGIN movie -->
+        <li>{{title}}</li>
+        <!-- END movie -->
+    </ul>
+</li>
+<!-- END actor -->
+</ul>
         </div>
 
         <!-- BEGIN pageID -->
@@ -277,6 +291,41 @@
 
     /* Iterate over array of scalar values */
     template.each(asSeenOn,'publication','pubName');
+
+    var actors = [
+    {
+        firstName : 'Brad',
+        lastName : 'Pitt',
+        movies : [
+            'Seven',
+            'Meet Joe Black',
+            '12 Monkeys'
+        ]
+    },
+    {
+        firstName : 'George',
+        lastName : 'Clooney',
+        movies : [
+            'Oceans 11',
+            'The Descendants',
+            'Syriana'
+        ]
+    },
+    {
+        firstName : 'Matt',
+        lastName : 'Damon',
+        movies : [
+            'Courage Under Fire',
+            'Good Will Hunting',
+            'The Bourne Supremacy'
+        ]
+    }
+];
+
+
+template.each(actors,'actor',function(actor,i){
+    template.each(actor.movies,'movie','title');
+});
 
     /* Snip the pageID block, rendering it with the {{id}} value from
      * data without having it show up in the rendered template. */
