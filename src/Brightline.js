@@ -913,7 +913,9 @@ if (typeof MINIFIED === 'undefined'){
                  snip                           : this.snip.bind(this),
                  setLogLevel                    : this.setLogLevel.bind(this),
                  setName                        : this.setName.bind(this),
-                 each                           : this.each.bind(this)
+                 each                           : this.each.bind(this),
+                 compile                        : this.compile.bind(this),
+                 load                           : this.load.bind(this)
              }
         },
 
@@ -1425,6 +1427,52 @@ if (typeof MINIFIED === 'undefined'){
             if (!this.blocks.has('__root__')){
                 this.blocks.addParent(rootBlock);
             }
+        },
+
+        compile : function(name){
+
+            if (!window.BrightlineCache){
+                window.BrightlineCache = {};
+            }
+
+            window.BrightlineCache[name] = JSON.stringify(this.blocks);
+
+            return (function(n){
+
+                return function(){
+                    return new Brightline().load(n);
+                }
+
+            }(name));
+        },
+
+        load : function(name){
+
+            var obj                         = JSON.parse(window.BrightlineCache[name]);
+
+            this.blocks.childParentMap      = obj.childParentMap;
+            this.blocks.numNodes            = obj.numNodes;
+            this.blocks.tree                = obj.tree;
+
+            for (var blockName in obj.nodes){
+
+                if (obj.nodes.hasOwnProperty(blockName)){
+
+                    var templateBlock       = new TemplateBlock(blockName);
+                    var thisNode            = obj.nodes[blockName];
+
+                    for (var prop in thisNode){
+
+                        if (thisNode.hasOwnProperty(prop)){
+                            templateBlock[prop] = thisNode[prop];
+                        }
+                    }
+
+                    this.blocks.nodes[blockName] = templateBlock;
+                }
+            }
+
+            return this;
         },
 
         /**
