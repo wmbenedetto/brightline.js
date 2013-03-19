@@ -913,9 +913,9 @@ if (typeof MINIFIED === 'undefined'){
                  snip                           : this.snip.bind(this),
                  setLogLevel                    : this.setLogLevel.bind(this),
                  setName                        : this.setName.bind(this),
-		 each                           : this.each.bind(this),
-		 compile                        : this.compile.bind(this),
-		 load                           : this.load.bind(this)
+                 each                           : this.each.bind(this),
+                 compile                        : this.compile.bind(this),
+                 load                           : this.load.bind(this)
              }
         },
 
@@ -1429,47 +1429,64 @@ if (typeof MINIFIED === 'undefined'){
             }
         },
 
-        compile : function(name){
-
-            if (!window.BrightlineCache){
-            window.BrightlineCache = {};
-            }
-
-            window.BrightlineCache[name] = JSON.stringify(this.blocks);
-
-            return (function(n){
-
-            return function(){
-                return new Brightline().load(n);
-            }
-
-            }(name));
+        /**
+         * Compiles parsed template to JSON string
+         *
+         * @returns {*}
+         */
+        compile : function(){
+            return JSON.stringify(this.blocks);
         },
 
-        load : function(name){
+        /**
+         * Loads cached template by name from cache, looking up in optional cache object
+         * if provided, otherwise loading from window.__BrightlineCache. Once loaded,
+         * the cached template is used to rehydrate this instance.
+         *
+         * @param name The name of the cached template to load
+         * @param cacheObj Optional object from which to load cached templates
+         * @returns {*}
+         */
+        load : function(name,cacheObj){
 
-            var obj                         = JSON.parse(window.BrightlineCache[name]);
+            cacheObj                                = cacheObj || window.__BrightlineCache;
 
-            this.blocks.childParentMap      = obj.childParentMap;
-            this.blocks.numNodes            = obj.numNodes;
-            this.blocks.tree                = obj.tree;
+            if (isObjLiteral(cacheObj)){
 
-            for (var blockName in obj.nodes){
+                if (name in cacheObj){
 
-            if (obj.nodes.hasOwnProperty(blockName)){
+                    var obj                         = cacheObj[name];
 
-                var templateBlock       = new TemplateBlock(blockName);
-                var thisNode            = obj.nodes[blockName];
+                    this.blocks.childParentMap      = obj.childParentMap;
+                    this.blocks.numNodes            = obj.numNodes;
+                    this.blocks.tree                = obj.tree;
 
-                for (var prop in thisNode){
+                    for (var blockName in obj.nodes){
 
-                if (thisNode.hasOwnProperty(prop)){
-                    templateBlock[prop] = thisNode[prop];
+                        if (obj.nodes.hasOwnProperty(blockName)){
+
+                            var templateBlock       = new TemplateBlock(blockName);
+                            var thisNode            = obj.nodes[blockName];
+
+                            for (var prop in thisNode){
+
+                                if (thisNode.hasOwnProperty(prop)){
+                                    templateBlock[prop] = thisNode[prop];
+                                }
+                            }
+
+                            this.blocks.nodes[blockName] = templateBlock;
+                        }
+                    }
+
+                } else {
+
+                    throw new Error('['+this.name+' Brightline.load()] '+name+' does not exist in cache');
                 }
-                }
 
-                this.blocks.nodes[blockName] = templateBlock;
-            }
+            } else {
+
+                throw new Error('['+this.name+' Brightline.load()] Cache does not exist');
             }
 
             return this;
