@@ -1429,51 +1429,51 @@ if (typeof MINIFIED === 'undefined'){
             }
         },
 
-	compile : function(name){
+        compile : function(name){
 
-	    if (!window.BrightlineCache){
-		window.BrightlineCache = {};
-	    }
+            if (!window.BrightlineCache){
+            window.BrightlineCache = {};
+            }
 
-	    window.BrightlineCache[name] = JSON.stringify(this.blocks);
+            window.BrightlineCache[name] = JSON.stringify(this.blocks);
 
-	    return (function(n){
+            return (function(n){
 
-		return function(){
-		    return new Brightline().load(n);
-		}
+            return function(){
+                return new Brightline().load(n);
+            }
 
-	    }(name));
-	},
+            }(name));
+        },
 
-	load : function(name){
+        load : function(name){
 
-	    var obj                         = JSON.parse(window.BrightlineCache[name]);
+            var obj                         = JSON.parse(window.BrightlineCache[name]);
 
-	    this.blocks.childParentMap      = obj.childParentMap;
-	    this.blocks.numNodes            = obj.numNodes;
-	    this.blocks.tree                = obj.tree;
+            this.blocks.childParentMap      = obj.childParentMap;
+            this.blocks.numNodes            = obj.numNodes;
+            this.blocks.tree                = obj.tree;
 
-	    for (var blockName in obj.nodes){
+            for (var blockName in obj.nodes){
 
-		if (obj.nodes.hasOwnProperty(blockName)){
+            if (obj.nodes.hasOwnProperty(blockName)){
 
-		    var templateBlock       = new TemplateBlock(blockName);
-		    var thisNode            = obj.nodes[blockName];
+                var templateBlock       = new TemplateBlock(blockName);
+                var thisNode            = obj.nodes[blockName];
 
-		    for (var prop in thisNode){
+                for (var prop in thisNode){
 
-			if (thisNode.hasOwnProperty(prop)){
-			    templateBlock[prop] = thisNode[prop];
-			}
-		    }
+                if (thisNode.hasOwnProperty(prop)){
+                    templateBlock[prop] = thisNode[prop];
+                }
+                }
 
-		    this.blocks.nodes[blockName] = templateBlock;
-		}
-	    }
+                this.blocks.nodes[blockName] = templateBlock;
+            }
+            }
 
-	    return this;
-	},
+            return this;
+        },
 
         /**
          * Recursively finds blocks in TemplateBlock content
