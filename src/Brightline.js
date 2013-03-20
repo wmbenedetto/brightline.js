@@ -2,7 +2,6 @@
 if (typeof MINIFIED === 'undefined'){
     MINIFIED = false;
 }
-
 /**
  *     ____  ____  ____________  __________    _____   ________     _______
  *    / __ )/ __ \/  _/ ____/ / / /_  __/ /   /  _/ | / / ____/    / / ___/
@@ -32,8 +31,19 @@ if (typeof MINIFIED === 'undefined'){
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-(function(window,undefined) {
 
+/* If we're in a browser, window will be defined. If we're on the server, global will be defined. */
+(function(){
+    window = (typeof window !== 'undefined') ? window : null;
+    global = (typeof global !== 'undefined') ? global : null;
+}());
+
+/**
+ * @param root Either window or global, depending on environment (browser or server)
+ */
+(function(root,undefined) {
+
+    /* Anything in an if(!MINIFIED) block is excluded from the minified version */
     if (!MINIFIED){
 
         var logLevels = {
@@ -46,7 +56,7 @@ if (typeof MINIFIED === 'undefined'){
         };
 
         var logLevel                                = 'OFF';
-        var console                                 = window.console || {};
+        var console                                 = root.console || {};
 
         console.log                                 = (typeof console.log   === 'function') ? console.log   : function() {};
         console.info                                = (typeof console.info  === 'function') ? console.info  : console.log;
@@ -863,7 +873,7 @@ if (typeof MINIFIED === 'undefined'){
     /**
      * TemplateProcessor class constructor
      *
-     * The TemplateProcessor contains the logic for processing a template to
+     * The TemplateProcessor contains the logic for compiling a template to
      * extract blocks and variables. It is only needed when Brightline is not
      * using pre-compiled templates, and needs to compile templates on the fly.
      *
@@ -894,8 +904,7 @@ if (typeof MINIFIED === 'undefined'){
         blocks                              : null,
 
         /**
-         * Alias for global log(). Prepends Brightline instance name
-         * to funcName.
+         * Alias for global log(). Prepends Brightline instance name to funcName.
          *
          * @param funcName The name of the function generating the log message
          * @param message The message to log
@@ -913,8 +922,7 @@ if (typeof MINIFIED === 'undefined'){
         },
 
         /**
-         * Processes template string, extracting all blocks and variables
-         * into TemplateBlock objects
+         * Processes template string, extracting all blocks and variables into TemplateBlock objects
          *
          * @param templateString String containing template markup
          */
@@ -1657,7 +1665,7 @@ if (typeof MINIFIED === 'undefined'){
 
         /**
          * Loads cached template by name from cache, looking up in optional cache object
-         * if provided, otherwise loading from window.__BrightlineCache. Once loaded,
+         * if provided, otherwise loading from root.__BrightlineCache. Once loaded,
          * the cached template is used to rehydrate this instance.
          *
          * @param name The name of the cached template to load
@@ -1666,7 +1674,7 @@ if (typeof MINIFIED === 'undefined'){
          */
         load : function(name,cacheObj){
 
-            cacheObj                                = cacheObj || window.__BrightlineCache;
+            cacheObj                                = cacheObj || root.__BrightlineCache;
 
             if (isObjLiteral(cacheObj)){
 
@@ -1940,10 +1948,13 @@ if (typeof MINIFIED === 'undefined'){
             return Brightline;
         });
     }
+    /* If module.exports is available, use that to export Brightline */
+    else if (typeof module !== 'undefined' && module.exports) {
+        module.exports = Brightline;
+    }
     /* Otherwise, add Brightline to global namespace */
     else {
-
-        window.Brightline = Brightline;
+        root.Brightline = Brightline;
     }
 
-}(window));
+}(window || global));
