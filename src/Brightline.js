@@ -41,7 +41,8 @@ if (typeof MINIFIED === 'undefined'){
             ERROR                                   : 1,
             WARN                                    : 2,
             INFO                                    : 3,
-            DEBUG                                   : 4
+            DEBUG                                   : 4,
+            TRACE                                   : 5
         };
 
         var logLevel                                = 'OFF';
@@ -226,6 +227,13 @@ if (typeof MINIFIED === 'undefined'){
     /**
      * TemplateBlock class constructor
      *
+     * A TemplateBlock is an object representation of a block of HTML from
+     * a template, as delimited by BEGIN and END comments:
+     *
+     * <!-- BEGIN someBlock -->
+     * <div>{{someVariable}}</div>
+     * <!-- END someBlock -->
+     *
      * @param name The name of the template block
      * @constructor
      */
@@ -329,6 +337,9 @@ if (typeof MINIFIED === 'undefined'){
 
     /**
      * Tree class constructor
+     *
+     * Tree is a generic class for maintaining a collection of items
+     * which have parent-child relationships.
      *
      * @constructor
      */
@@ -519,7 +530,7 @@ if (typeof MINIFIED === 'undefined'){
                 parent                          : parent,
                 child                           : child
 
-            },'DEBUG');
+            },'TRACE');
 
             this.addNode(child,childNodeID);
 
@@ -551,7 +562,7 @@ if (typeof MINIFIED === 'undefined'){
                     parent                          : parent,
                     children                        : children
 
-                },'DEBUG');
+                },'TRACE');
             }
 
             for (var i=0;i<children.length;i++){
@@ -638,7 +649,7 @@ if (typeof MINIFIED === 'undefined'){
                     parent                          : parent,
                     child                           : child
 
-                },'DEBUG');
+                },'TRACE');
             }
 
             var parentNodeID                    = this.getNodeID(parent);
@@ -701,7 +712,7 @@ if (typeof MINIFIED === 'undefined'){
                     parent                          : parent,
                     children                        : children
 
-                },'DEBUG');
+                },'TRACE');
             }
 
             for (var i in children){
@@ -744,7 +755,7 @@ if (typeof MINIFIED === 'undefined'){
             }
 
             if (!MINIFIED){
-                this.log('addParent', 'Adding parent',parent,'DEBUG');
+                this.log('addParent', 'Adding parent', parent, 'TRACE');
             }
 
             this.addNode(parent,parentNodeID);
@@ -831,7 +842,7 @@ if (typeof MINIFIED === 'undefined'){
             var nodeID                          = this.getNodeID(node);
 
             if (!MINIFIED){
-                this.log('remove', 'Removing node',node,'DEBUG');
+                this.log('remove', 'Removing node', node, 'TRACE');
             }
 
             if (this.hasParent(nodeID)){
@@ -850,13 +861,240 @@ if (typeof MINIFIED === 'undefined'){
     };
 
     /**
-     * Brightline class constructor
+     * TemplateProcessor class constructor
      *
-     * @param templateString Optional html string containing template blocks and/or vars
-     * @param options Optional object containing config options
+     * The TemplateProcessor contains the logic for processing a template to
+     * extract blocks and variables. It is only needed when Brightline is not
+     * using pre-compiled templates, and needs to compile templates on the fly.
+     *
+     * @param name The name of the template being processed
+     * @param blocks Reference to blocks Tree from Brightline instance
      * @constructor
      */
-    var Brightline = function Brightline(templateString,options) {
+    var TemplateProcessor = function TemplateProcessor(name,blocks){
+
+        this.name                           = name;
+        this.blocks                         = blocks;
+
+        if (!MINIFIED){
+            this.log('constructor', 'Creating new TemplateProcessor for '+name, null, 'DEBUG');
+        }
+
+        return this;
+    };
+
+    /**
+     * TemplateProcessor class prototype
+     *
+     * @type {Object}
+     */
+    TemplateProcessor.prototype = {
+
+        name                                : null,
+        blocks                              : null,
+
+        /**
+         * Alias for global log(). Prepends Brightline instance name
+         * to funcName.
+         *
+         * @param funcName The name of the function generating the log message
+         * @param message The message to log
+         * @param payload Data object
+         * @param level Log level (ERROR, WARN, INFO, DEBUG)
+         */
+        log : function(funcName,message,payload,level){
+
+            if (!MINIFIED){
+
+                funcName                    = (this.name) ? this.name+': TemplateProcessor.'+funcName : 'TemplateProcessor.'+funcName;
+
+                log(funcName,message,payload,level);
+            }
+        },
+
+        /**
+         * Processes template string, extracting all blocks and variables
+         * into TemplateBlock objects
+         *
+         * @param templateString String containing template markup
+         */
+        process : function(templateString){
+
+            if (!MINIFIED){
+                this.log('process', 'Processing template string', { templateString : templateString } , 'DEBUG');
+            }
+
+            var rootBlock                   = new TemplateBlock('__root__');
+            rootBlock.setContent(templateString);
+
+            this.findBlocks(rootBlock);
+            this.insertChildBlockPlaceholders(rootBlock);
+            this.findVariablesInBlockContent(rootBlock);
+
+            if (!this.blocks.has('__root__')){
+                this.blocks.addParent(rootBlock);
+            }
+
+            return this.blocks;
+        },
+
+        /**
+         * Recursively finds blocks in TemplateBlock content
+         *
+         * Blocks look like:
+         *
+         * <!-- BEGIN myBlock -->
+         * Blah Blah {{variable}} blah blah
+         * <!-- END myBlock -->
+         *
+         * @param parentBlock The TemplateBlock containing the content to search for blocks
+         */
+        findBlocks : function(parentBlock){
+
+            var pattern                     = /<!--\s+BEGIN\s+([\.0-9A-Za-z:|_-]+)\s+-->([\s\S]*)<!--\s+END\s+\1\s+-->/mg;
+            var parentBlockContent          = parentBlock.getContent();
+            var foundBlocks                 = parentBlockContent.match(pattern);
+            var self                        = this;
+
+            if (foundBlocks){
+
+                if (!MINIFIED){
+                    this.log('findBlocks', 'Found blocks in '+parentBlock.getName(), foundBlocks , 'DEBUG');
+                }
+
+                for (var i=0;i<foundBlocks.length;i++){
+
+                    var foundBlock          = new RegExp(pattern).exec(foundBlocks[i]);
+
+                    if (foundBlock){
+
+                        var blockName       = foundBlock[1];
+                        var templateBlock   = new TemplateBlock(blockName);
+
+                        templateBlock.setContent(foundBlock[2]);
+
+                        if (self.blocks.has(blockName)){
+                            throw new Error('['+this.name+' TemplateProcessor.findBlocks()] Duplicate block name: '+blockName+'. Block names must be unique.');
+                        }
+
+                        self.blocks.addChild(parentBlock,templateBlock);
+                        self.findBlocks(templateBlock);
+                        self.insertChildBlockPlaceholders(templateBlock);
+                        self.findVariablesInBlockContent(templateBlock);
+                    }
+                }
+            }
+        },
+
+        /**
+         * Inserts placeholders for child blocks found in TemplateBlock.
+         *
+         * <!-- BEGIN myBlock -->
+         *     Some content
+         * <!-- END myBlock -->
+         *
+         * ... is replaced with ...
+         *
+         * {{__myBlock__}}
+         *
+         * @param templateBlock The TemplateBlock into which to insert child block placeholders
+         */
+        insertChildBlockPlaceholders : function(templateBlock){
+
+            if (this.blocks.hasChildren(templateBlock)){
+
+                if (!MINIFIED){
+                    this.log('insertChildBlockPlaceholders', 'Inserting child block placeholders in '+templateBlock.getName(), templateBlock , 'TRACE');
+                }
+
+                var childBlocks             = this.blocks.getChildren(templateBlock);
+                var self                    = this;
+
+                for (var i in childBlocks){
+
+                    if (childBlocks.hasOwnProperty(i)){
+
+                        (function(childBlock){
+
+                            var childBlockName          = childBlock.getName();
+                            var parentBlockContent      = templateBlock.getContent();
+                            var childBlockPattern       = '<!--\\s+BEGIN\\s+'+childBlockName+'\\s+-->([\\s\\S]*)<!--\\s+END\\s+'+childBlockName+'\\s+-->';
+                            var matches                 = parentBlockContent.match(childBlockPattern);
+
+                            if (matches){
+
+                                if (!MINIFIED){
+                                    self.log('insertChildBlockPlaceholders', ' --> Inserting placeholder for '+childBlockName, null , 'TRACE');
+                                }
+
+                                templateBlock.setContent(parentBlockContent.replace(matches[0],'{{__'+childBlockName+'__}}'));
+                            }
+
+                        }(childBlocks[i]));
+                    }
+                }
+            }
+        },
+
+        /**
+         * Finds variables in TemplateBlock
+         *
+         * Variables look like {{someVar}}
+         *
+         * @param templateBlock The TemplateBlock in which to find variables
+         */
+        findVariablesInBlockContent : function(templateBlock){
+
+            var pattern                     = /(?!\{{__[\.0-9A-Za-z\*:|_-]+__\}})\{{([\.0-9A-Za-z\*:|_-]+)\}}/mg;
+            var variableArray               = [];
+            var foundVariables              = templateBlock.getContent().match(pattern);
+
+            if (foundVariables){
+
+                if (!MINIFIED){
+
+                    this.log('findVariablesInBlockContent', 'Found variables in '+templateBlock.getName(), {
+
+                        templateBlock           : templateBlock,
+                        foundVariables          : foundVariables
+
+                    }, 'DEBUG');
+                }
+
+                for (var i=0;i<foundVariables.length;i++){
+
+                    if (!inArray(variableArray,foundVariables[i])){
+
+                        var rawVariableName = foundVariables[i].replace('{{','').replace('}}','');
+                        variableArray.push(rawVariableName);
+                    }
+                }
+
+                templateBlock.setVariables(variableArray);
+            }
+        }
+    };
+
+    /**
+     * Brightline class constructor
+     *
+     * This is the main template engine containing all the logic for setting variables,
+     * touching/parsing blocks, and rendering templates.
+     *
+     * If pre-compiled templates are being used, the only argument is an optional options
+     * hash specifying the template's name and logLevel.
+     *
+     * If templates are being compiled on-the-fly, the first argument should be a template
+     * string containing HTML with blocks and/or variables. The second argument is an optional
+     * options hash specifying the template's name and logLevel.
+     *
+     * @constructor
+     */
+    var Brightline = function Brightline() {
+
+        var args                                = Array.prototype.slice.call(arguments);
+        var templateString                      = (typeof args[0] === 'string') ? args[0] : null;
+        var options                             = (isObjLiteral(args[0])) ? args[0] : (args[1] || null);
 
         this.blocks                             = new Tree();
         this.currentBlock                       = null;
@@ -875,7 +1113,7 @@ if (typeof MINIFIED === 'undefined'){
         }
 
         if (typeof templateString === 'string'){
-            this.process(templateString);
+            this.blocks                         = new TemplateProcessor(this.name,this.blocks).process(templateString);
         }
 
         return this.getAPI();
@@ -1136,20 +1374,23 @@ if (typeof MINIFIED === 'undefined'){
          */
         clearScope : function(resetScope){
 
-            if (!MINIFIED){
-                this.log('clearScope', 'Clearing scope');
-            }
+            if (this.currentScope){
 
-            resetScope                      = (typeof resetScope === 'undefined') ? true : resetScope;
+                if (!MINIFIED){
+                    this.log('clearScope', 'Clearing scope');
+                }
 
-            if (!resetScope && this.currentScope !== null){
+                resetScope                  = (typeof resetScope === 'undefined') ? true : resetScope;
 
-                this.currentScope.variableCache     = {};
-                this.currentScope.usedVariables     = {};
-            }
+                if (!resetScope && this.currentScope !== null){
 
-            if (resetScope){
-                this.currentScope           = null;
+                    this.currentScope.variableCache     = {};
+                    this.currentScope.usedVariables     = {};
+                }
+
+                if (resetScope){
+                    this.currentScope       = null;
+                }
             }
 
             return this;
@@ -1406,30 +1647,6 @@ if (typeof MINIFIED === 'undefined'){
         },
 
         /**
-         * Processes template string, extracting all blocks and variables
-         * into TemplateBlock objects
-         *
-         * @param templateString String containing template markup
-         */
-        process : function(templateString){
-
-            if (!MINIFIED){
-                this.log('process', 'Processing template string', { templateString : templateString } , 'DEBUG');
-            }
-
-            var rootBlock                   = new TemplateBlock('__root__');
-            rootBlock.setContent(templateString);
-
-            this.findBlocks(rootBlock);
-            this.insertChildBlockPlaceholders(rootBlock);
-            this.findVariablesInBlockContent(rootBlock);
-
-            if (!this.blocks.has('__root__')){
-                this.blocks.addParent(rootBlock);
-            }
-        },
-
-        /**
          * Compiles parsed template to JSON string
          *
          * @returns {*}
@@ -1493,142 +1710,6 @@ if (typeof MINIFIED === 'undefined'){
         },
 
         /**
-         * Recursively finds blocks in TemplateBlock content
-         *
-         * Blocks look like:
-         *
-         * <!-- BEGIN myBlock -->
-         * Blah Blah {{variable}} blah blah
-         * <!-- END myBlock -->
-         *
-         * @param parentBlock The TemplateBlock containing the content to search for blocks
-         */
-        findBlocks : function(parentBlock){
-
-            var pattern                     = /<!--\s+BEGIN\s+([\.0-9A-Za-z:|_-]+)\s+-->([\s\S]*)<!--\s+END\s+\1\s+-->/mg;
-            var parentBlockContent          = parentBlock.getContent();
-            var foundBlocks                 = parentBlockContent.match(pattern);
-            var self                        = this;
-
-            if (foundBlocks){
-
-                if (!MINIFIED){
-                    this.log('findBlocks', 'Found blocks in '+parentBlock.getName(), foundBlocks , 'DEBUG');
-                }
-
-                for (var i=0;i<foundBlocks.length;i++){
-
-                    var foundBlock          = new RegExp(pattern).exec(foundBlocks[i]);
-
-                    if (foundBlock){
-
-                        var blockName       = foundBlock[1];
-                        var templateBlock   = new TemplateBlock(blockName);
-
-                        templateBlock.setContent(foundBlock[2]);
-
-                        if (self.blocks.has(blockName)){
-                            throw new Error('['+this.name+' Brightline.findBlocks()] Duplicate block name: '+blockName+'. Block names must be unique.');
-                        }
-
-                        self.blocks.addChild(parentBlock,templateBlock);
-                        self.findBlocks(templateBlock);
-                        self.insertChildBlockPlaceholders(templateBlock);
-                        self.findVariablesInBlockContent(templateBlock);
-                    }
-                }
-            }
-        },
-
-        /**
-         * Inserts placeholders for child blocks found in TemplateBlock.
-         *
-         * <!-- BEGIN myBlock -->
-         *     Some content
-         * <!-- END myBlock -->
-         *
-         * ... is replaced with ...
-         *
-         * {{__myBlock__}}
-         *
-         * @param templateBlock The TemplateBlock into which to insert child block placeholders
-         */
-        insertChildBlockPlaceholders : function(templateBlock){
-
-            if (this.blocks.hasChildren(templateBlock)){
-
-                if (!MINIFIED){
-                    this.log('insertChildBlockPlaceholders', 'Inserting child block placeholders in '+templateBlock.getName(), templateBlock , 'DEBUG');
-                }
-
-                var childBlocks             = this.blocks.getChildren(templateBlock);
-                var self                    = this;
-
-                for (var i in childBlocks){
-
-                    if (childBlocks.hasOwnProperty(i)){
-
-                        (function(childBlock){
-
-                            var childBlockName          = childBlock.getName();
-                            var parentBlockContent      = templateBlock.getContent();
-                            var childBlockPattern       = '<!--\\s+BEGIN\\s+'+childBlockName+'\\s+-->([\\s\\S]*)<!--\\s+END\\s+'+childBlockName+'\\s+-->';
-                            var matches                 = parentBlockContent.match(childBlockPattern);
-
-                            if (matches){
-
-                                if (!MINIFIED){
-                                    self.log('insertChildBlockPlaceholders', ' --> Inserting placeholder for '+childBlockName, null , 'DEBUG');
-                                }
-
-                                templateBlock.setContent(parentBlockContent.replace(matches[0],'{{__'+childBlockName+'__}}'));
-                            }
-
-                        }(childBlocks[i]));
-                    }
-                }
-            }
-        },
-
-        /**
-         * Finds variables in TemplateBlock
-         *
-         * Variables look like {{someVar}}
-         *
-         * @param templateBlock The TemplateBlock in which to find variables
-         */
-        findVariablesInBlockContent : function(templateBlock){
-
-            var pattern                     = /(?!\{{__[\.0-9A-Za-z\*:|_-]+__\}})\{{([\.0-9A-Za-z\*:|_-]+)\}}/mg;
-            var variableArray               = [];
-            var foundVariables              = templateBlock.getContent().match(pattern);
-
-            if (foundVariables){
-
-                if (!MINIFIED){
-
-                    this.log('findVariablesInBlockContent', 'Found variables in '+templateBlock.getName(), {
-
-                        templateBlock           : templateBlock,
-                        foundVariables          : foundVariables
-
-                    }, 'DEBUG');
-                }
-
-                for (var i=0;i<foundVariables.length;i++){
-
-                    if (!inArray(variableArray,foundVariables[i])){
-
-                        var rawVariableName = foundVariables[i].replace('{{','').replace('}}','');
-                        variableArray.push(rawVariableName);
-                    }
-                }
-
-                templateBlock.setVariables(variableArray);
-            }
-        },
-
-        /**
          * Parses block, replacing variables with values and child block placeholders
          * with parsed child block content
          *
@@ -1638,7 +1719,7 @@ if (typeof MINIFIED === 'undefined'){
         parseBlock : function(templateBlock){
 
             if (!MINIFIED){
-                this.log('parseBlock', 'Parsing '+templateBlock.getName(), templateBlock , 'DEBUG');
+                this.log('parseBlock', 'Parsing '+templateBlock.getName(), templateBlock , 'TRACE');
             }
 
             var childBlocks                 = this.blocks.getChildren(templateBlock);
@@ -1676,7 +1757,7 @@ if (typeof MINIFIED === 'undefined'){
             if (blockVariables.length > 0){
 
                 if (!MINIFIED){
-                    this.log('replaceBlockVariables', 'Replacing block variables in '+templateBlock.getName(), templateBlock , 'DEBUG');
+                    this.log('replaceBlockVariables', 'Replacing block variables in '+templateBlock.getName(), templateBlock , 'TRACE');
                 }
 
                 for (var i=0;i<blockVariables.length;i++){
@@ -1691,7 +1772,7 @@ if (typeof MINIFIED === 'undefined'){
                             blockContent    = blockContent.replace(placeholder,blockVariableCache[variableName]);
 
                             if (!MINIFIED){
-                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+templateBlock.variableCache[variableName]+'" from template block', null , 'DEBUG');
+                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+templateBlock.variableCache[variableName]+'" from template block', null , 'TRACE');
                             }
 
                             templateBlock.setUsedVariable(variableName,true);
@@ -1702,7 +1783,7 @@ if (typeof MINIFIED === 'undefined'){
                             blockContent    = blockContent.replace(placeholder,this.variableCache[variableName]);
 
                             if (!MINIFIED){
-                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+this.variableCache[variableName]+'" from variable cache', null , 'DEBUG');
+                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with "'+this.variableCache[variableName]+'" from variable cache', null , 'TRACE');
                             }
 
                             this.usedVariables[variableName] = true;
@@ -1711,7 +1792,7 @@ if (typeof MINIFIED === 'undefined'){
                         } else {
 
                             if (!MINIFIED){
-                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with empty string', null , 'DEBUG');
+                                this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with empty string', null , 'TRACE');
                             }
 
                             blockContent    = blockContent.replace(placeholder,'');
@@ -1720,7 +1801,7 @@ if (typeof MINIFIED === 'undefined'){
                     } else {
 
                         if (!MINIFIED){
-                            this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with empty string', null , 'DEBUG');
+                            this.log('replaceBlockVariables', ' --> Replacing block variable "'+variableName+'" with empty string', null , 'TRACE');
                         }
 
                         blockContent        = blockContent.replace(placeholder,'');
@@ -1763,7 +1844,7 @@ if (typeof MINIFIED === 'undefined'){
                             if (parsedContent.hasOwnProperty(j) && parsedContent[j].indexOf(placeholder) > -1){
 
                                 if (!MINIFIED){
-                                    this.log('replaceChildBlockPlaceholders', ' --> Replacing child block '+placeholder, { replacement : replacement } , 'DEBUG');
+                                    this.log('replaceChildBlockPlaceholders', ' --> Replacing child block '+placeholder, { replacement : replacement } , 'TRACE');
                                 }
 
                                 parsedContent[j]        = parsedContent[j].replace(placeholder,replacement);
@@ -1808,7 +1889,7 @@ if (typeof MINIFIED === 'undefined'){
             }
 
             if (!MINIFIED){
-                this.log('getParsedContent', 'Getting parsed content for '+templateBlock.getName(), { parsedContent : templateBlock.parsedContent } , 'DEBUG');
+                this.log('getParsedContent', 'Getting parsed content for '+templateBlock.getName(), { parsedContent : templateBlock.parsedContent } , 'TRACE');
             }
 
             return templateBlock.getParsedContent();
@@ -1820,7 +1901,7 @@ if (typeof MINIFIED === 'undefined'){
         clearUsedVariablesFromCache : function(){
 
             if (!MINIFIED){
-                this.log('clearUsedVariablesFromCache', 'Clearing used variables from cache', this.usedVariables , 'DEBUG');
+                this.log('clearUsedVariablesFromCache', 'Clearing used variables from cache', this.usedVariables , 'TRACE');
             }
 
             for (var varName in this.usedVariables){
