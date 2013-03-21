@@ -1663,10 +1663,7 @@ if (typeof MINIFIED === 'undefined'){
          * @returns {*}
          */
         compile : function(returnAsFunction){
-
-            var compiled                            = JSON.stringify(this.blocks);
-
-            return (returnAsFunction) ? "function(){ return "+compiled+";};" : compiled;
+            return (returnAsFunction) ? "function(){ return "+JSON.stringify(this.blocks)+";};" : this.blocks;
         },
 
         /**
