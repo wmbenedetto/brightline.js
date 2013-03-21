@@ -42,7 +42,7 @@ if (typeof MINIFIED === 'undefined'){
  * @param root Either window or global, depending on environment (browser or server)
  */
 (function(root,undefined) {
-
+var foo = 'test';
     /* Anything in an if(!MINIFIED) block is excluded from the minified version */
     if (!MINIFIED){
 
