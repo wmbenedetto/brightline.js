@@ -982,7 +982,7 @@ if (typeof MINIFIED === 'undefined'){
                         templateBlock.setContent(foundBlock[2]);
 
                         if (self.blocks.has(blockName)){
-                            throw new Error('['+this.name+' TemplateProcessor.findBlocks()] Duplicate block name: '+blockName+'. Block names must be unique.');
+                            throw new Error('Duplicate block name: '+blockName+'. Block names must be unique.');
                         }
 
                         self.blocks.addChild(parentBlock,templateBlock);
@@ -1359,7 +1359,7 @@ if (typeof MINIFIED === 'undefined'){
         setScope : function(blockName){
 
             if (!this.hasBlock(blockName)){
-                throw new Error('['+this.name+' Brightline.setScope()] Cannot set scope to non-existent block: '+blockName);
+                throw new Error('Cannot set scope to non-existent block: '+blockName);
             }
 
             if (!MINIFIED){
@@ -1638,7 +1638,7 @@ if (typeof MINIFIED === 'undefined'){
         getBlock : function(blockName){
 
             if (!this.hasBlock(blockName)){
-                throw new Error('['+this.name+' Brightline.getBlock()] Cannot get non-existent block: '+blockName);
+                throw new Error('Cannot get non-existent block: '+blockName);
             }
 
             return this.blocks.getChild(blockName);
@@ -1658,13 +1658,14 @@ if (typeof MINIFIED === 'undefined'){
          * Compiles parsed template to JSON string and returns as function
          * that can be called by load() when retrieved from cache.
          *
+         * @param returnAsFunction If true, the compiled template is returned as a function
          * @returns {*}
          */
-        compile : function(){
+        compile : function(returnAsFunction){
 
             var compiled                            = JSON.stringify(this.blocks);
 
-            return "function(){ return "+compiled+";};";
+            return (returnAsFunction) ? "function(){ return "+compiled+";};" : compiled;
         },
 
         /**
@@ -1685,41 +1686,62 @@ if (typeof MINIFIED === 'undefined'){
                 if (name in cacheObj){
 
                     if (!MINIFIED){
-                        this.log('load', 'Loading ' + name + 'from', cacheObj);
+                        this.log('load', 'Loading ' + name + ' from', cacheObj);
                     }
 
                     var obj                         = cacheObj[name]();
 
-                    this.blocks.childParentMap      = obj.childParentMap;
-                    this.blocks.numNodes            = obj.numNodes;
-                    this.blocks.tree                = obj.tree;
-
-                    for (var blockName in obj.nodes){
-
-                        if (obj.nodes.hasOwnProperty(blockName)){
-
-                            var templateBlock       = new TemplateBlock(blockName);
-                            var thisNode            = obj.nodes[blockName];
-
-                            for (var prop in thisNode){
-
-                                if (thisNode.hasOwnProperty(prop)){
-                                    templateBlock[prop] = thisNode[prop];
-                                }
-                            }
-
-                            this.blocks.nodes[blockName] = templateBlock;
-                        }
+                    if (isObjLiteral(obj)){
+                        this.import(obj);
+                    } else {
+                        throw new Error(name+' did not load object from cache');
                     }
 
                 } else {
 
-                    throw new Error('['+this.name+' Brightline.load()] '+name+' does not exist in cache');
+                    throw new Error(name+' does not exist in cache');
                 }
 
             } else {
 
-                throw new Error('['+this.name+' Brightline.load()] Cache does not exist');
+                throw new Error('Cache does not exist');
+            }
+
+            return this;
+        },
+
+        /**
+         * Imports compiled template object
+         *
+         * @param compiledTpl Object compiled by compile() function
+         * @returns {*}
+         */
+        import : function(compiledTpl){
+
+            if (!MINIFIED){
+                this.log('import', 'Importing blocks', compiledTpl, 'DEBUG');
+            }
+
+            this.blocks.childParentMap              = compiledTpl.childParentMap;
+            this.blocks.numNodes                    = compiledTpl.numNodes;
+            this.blocks.tree                        = compiledTpl.tree;
+
+            for (var blockName in compiledTpl.nodes){
+
+                if (compiledTpl.nodes.hasOwnProperty(blockName)){
+
+                    var templateBlock               = new TemplateBlock(blockName);
+                    var thisNode                    = compiledTpl.nodes[blockName];
+
+                    for (var prop in thisNode){
+
+                        if (thisNode.hasOwnProperty(prop)){
+                            templateBlock[prop] = thisNode[prop];
+                        }
+                    }
+
+                    this.blocks.nodes[blockName] = templateBlock;
+                }
             }
 
             return this;
