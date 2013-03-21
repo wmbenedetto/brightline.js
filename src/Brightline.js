@@ -1684,6 +1684,10 @@ if (typeof MINIFIED === 'undefined'){
 
                 if (name in cacheObj){
 
+                    if (!MINIFIED){
+                        this.log('load', 'Loading ' + name + 'from', cacheObj);
+                    }
+
                     var obj                         = cacheObj[name]();
 
                     this.blocks.childParentMap      = obj.childParentMap;
