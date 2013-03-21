@@ -1655,12 +1655,16 @@ if (typeof MINIFIED === 'undefined'){
         },
 
         /**
-         * Compiles parsed template to JSON string
+         * Compiles parsed template to JSON string and returns as function
+         * that can be called by load() when retrieved from cache.
          *
          * @returns {*}
          */
         compile : function(){
-            return JSON.stringify(this.blocks);
+
+            var compiled                            = JSON.stringify(this.blocks);
+
+            return "function(){ return "+compiled+";};";
         },
 
         /**
@@ -1680,7 +1684,7 @@ if (typeof MINIFIED === 'undefined'){
 
                 if (name in cacheObj){
 
-                    var obj                         = cacheObj[name];
+                    var obj                         = cacheObj[name]();
 
                     this.blocks.childParentMap      = obj.childParentMap;
                     this.blocks.numNodes            = obj.numNodes;
