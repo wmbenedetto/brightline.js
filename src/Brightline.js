@@ -1161,7 +1161,8 @@ if (typeof MINIFIED === 'undefined'){
                  setName                        : this.setName.bind(this),
                  each                           : this.each.bind(this),
                  compile                        : this.compile.bind(this),
-                 load                           : this.load.bind(this)
+                 load                           : this.load.bind(this),
+                 import                         : this.import.bind(this)
              }
         },
 
