@@ -82,7 +82,7 @@ var compileTemplate = function(templatePath){
 
     fs.readFile(templatePath,'utf8',function(err,templateString){
 
-        var compiledTemplate    = new Brightline(templateString).compile();
+        var compiledTemplate    = new Brightline(templateString).compile(true);
         var fileName            = path.basename(templatePath,'.tpl');
 
         cache                  += "    root.__BrightlineCache['"+fileName+"'] = "+compiledTemplate+";\n";
