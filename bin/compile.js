@@ -1,5 +1,6 @@
 var fs                          = require('fs');
 var path                        = require('path');
+var colors                      = require('colors');
 var Brightline                  = require('../src/Brightline');
 
 var templatesRootDir            = process.argv[2] || '.';
@@ -12,6 +13,10 @@ var numCompiled                 = 0;
  * Executes compilation process
  */
 var exec = function(){
+
+    console.log("\n\nBrightline compiler START".green);
+    console.log("Searching for templates, starting from " + templatesRootDir);
+
     findTemplates(templatesRootDir,compileTemplates);
 };
 
@@ -52,8 +57,17 @@ var findTemplates = function(currentPath,done) {
  */
 var compileTemplates = function(){
 
-    for (var i=0;i<templatePaths.length;i++){
-        compileTemplate(templatePaths[i]);
+    if (templatePaths.length > 0){
+
+        console.log('Compiling templates:');
+
+        for (var i=0;i<templatePaths.length;i++){
+            compileTemplate(templatePaths[i]);
+        }
+
+    } else {
+
+        console.log("WARNING:".yellow + "No templates found\n\n");
     }
 };
 
@@ -63,6 +77,8 @@ var compileTemplates = function(){
  * @param templatePath Path to the template file
  */
 var compileTemplate = function(templatePath){
+
+    console.log('--> Compiling ' + templatePath);
 
     fs.readFile(templatePath,'utf8',function(err,templateString){
 
@@ -87,10 +103,9 @@ var writeCacheFile = function(){
 
     var cachePath               = cacheDir + '/BrightlineCache.js';
 
-    /* Truncate old cache file */
-    fs.truncate(cachePath,function(){
+    console.log("Writing cache file to " + cachePath);
 
-        var cacheFn = "\
+    var cacheFn = "\
 (function(){\n\n\
     window = (typeof window !== 'undefined') ? window : null;\n\
     global = (typeof global !== 'undefined') ? global : null;\n\
@@ -98,8 +113,16 @@ var writeCacheFile = function(){
     root.__BrightlineCache = root.__BrightlineCache || {};\n" + cache + "\n\
 }());";
 
-        /* Write new cache file */
-        fs.appendFileSync(cachePath,cacheFn);
+    /* Write new cache file */
+    fs.writeFile(cachePath,cacheFn,function(err){
+
+        if (err){
+
+            console.log('ERROR: '.red + 'Could not write cache file to ' + cachePath + "\n\n");
+
+        } else {
+            console.log("DONE!\n\n".green);
+        }
     });
 };
 
