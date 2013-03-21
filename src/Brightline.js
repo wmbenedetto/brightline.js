@@ -1659,11 +1659,10 @@ if (typeof MINIFIED === 'undefined'){
          * Compiles parsed template to JSON string and returns as function
          * that can be called by load() when retrieved from cache.
          *
-         * @param returnAsFunction If true, the compiled template is returned as a function
          * @returns {*}
          */
-        compile : function(returnAsFunction){
-            return (returnAsFunction) ? "function(){ return "+JSON.stringify(this.blocks)+";};" : this.blocks;
+        compile : function(){
+            return "function(){ return "+JSON.stringify(this.blocks)+";};";
         },
 
         /**
