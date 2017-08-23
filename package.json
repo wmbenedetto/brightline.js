@@ -1,18 +1,18 @@
 {
     "name"                      : "brightline.js",
-    "version"                   : "0.3.4",
+    "version"                   : "0.3.5",
     "description"               : "Brightline.js is a JavaScript template engine for people who demand a clean separation (a bright line) between presentation and logic.",
     "keywords"                  : ["template", "templating","handlebars","mustache","template","html","tpl","brightline"],
     "categories"                : ["Templating"],
     "author": {
         "name"                  : "Warren Benedetto",
-        "url"                   : "http://www.transfusionmedia.com"
+        "url"                   : "https://github.com/wmbenedetto"
     },
     "maintainers" : [
         {
             "name"              : "Warren Benedetto",
             "email"             : "warren@transfusionmedia.com",
-            "web"               : "http://www.transfusionmedia.com"
+            "web"               : "https://github.com/wmbenedetto"
         }
     ],
     "contributors"              : [],

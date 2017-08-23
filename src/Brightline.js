@@ -32,7 +32,7 @@ if (typeof MINIFIED === 'undefined'){
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-(function(window,undefined) {
+(function(root,undefined) {
 
     if (!MINIFIED){
 
@@ -45,7 +45,7 @@ if (typeof MINIFIED === 'undefined'){
         };
 
         var logLevel                                = 'OFF';
-        var console                                 = window.console || {};
+        var console                                 = root.console || {};
 
         console.log                                 = (typeof console.log   === 'function') ? console.log   : function() {};
         console.info                                = (typeof console.info  === 'function') ? console.info  : console.log;
@@ -1787,8 +1787,13 @@ if (typeof MINIFIED === 'undefined'){
         }
     };
 
+    /* If in NodeJS context, module will exist */
+    if (typeof module !== 'undefined'){
+
+        module.exports                          = Brightline;
+    }
     /* If RequireJS define() is present, use it to export Brightline */
-    if (typeof define === "function") {
+    else if (typeof define === "function") {
 
         define(function() {
             return Brightline;
@@ -1797,7 +1802,7 @@ if (typeof MINIFIED === 'undefined'){
     /* Otherwise, add Brightline to global namespace */
     else {
 
-        window.Brightline = Brightline;
+        root.Brightline = Brightline;
     }
 
-}(window));
+}(this));
